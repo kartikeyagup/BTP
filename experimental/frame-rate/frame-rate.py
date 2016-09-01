@@ -43,9 +43,17 @@ class App:
         self.cam = cv2.VideoCapture(video_src)
         self.frame_idx = 0
         self.drop_rate = drop_rate
+        self.points_array = []
+
+    def find_epical_angle(self, point1, point2, rotation, translation, focal):
+        # Todo Faran
+        return 5
+
+    def analyze(self):
+        print("Entered analysis", len(self.points_array))
 
     def run(self):
-        all_tracks = []
+        self.points_array=[]
         frame_id = -1
         while True:
             frame_id += 1
@@ -95,12 +103,11 @@ class App:
             self.frame_idx += 1
             self.prev_gray = frame_gray
             cv2.imshow('lk_track', vis)
-            all_tracks.append(present_tracks)
+            self.points_array.append(present_tracks)
 
             ch = 0xFF & cv2.waitKey(1)
             if ch == 27:
                 break
-        return all_tracks
 
 def main():
     import sys
@@ -116,7 +123,10 @@ def main():
 
     print(video_src)
 
-    all_tracks = App(video_src, drop_rate).run()
+    video_app = App(video_src, drop_rate)
+    video_app.run()
+    video_app.analyze()
+
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
