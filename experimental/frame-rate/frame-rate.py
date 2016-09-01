@@ -10,7 +10,7 @@ between frames.
 
 Usage
 -----
-lk_track.py [<video_source>]
+lk_track.py [<video_source>] [<drop rate>]
 
 
 Keys
@@ -36,21 +36,27 @@ feature_params = dict( maxCorners = 500,
                        blockSize = 7 )
 
 class App:
-    def __init__(self, video_src):
+    def __init__(self, video_src, drop_rate):
         self.track_len = 10
         self.detect_interval = 5
         self.tracks = []
         self.cam = cv2.VideoCapture(video_src)
         self.frame_idx = 0
+        self.drop_rate = drop_rate
 
     def run(self):
         all_tracks = []
+        frame_id = -1
         while True:
+            frame_id += 1
             present_tracks = []
             ret, frame = self.cam.read()
             if (frame == None):
                 print("Video Ended")
                 break
+            if frame_id%self.drop_rate:
+                continue
+
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             vis = frame.copy()
 
@@ -99,11 +105,18 @@ class App:
 def main():
     import sys
     try:
-        video_src = sys.argv[1]
+        video_src = int(sys.argv[1])
     except:
         video_src = 0
 
-    print(App(video_src).run())
+    try:
+        drop_rate = int(sys.argv[2])
+    except:
+        drop_rate = 1
+
+    print(video_src)
+
+    all_tracks = App(video_src, drop_rate).run()
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
