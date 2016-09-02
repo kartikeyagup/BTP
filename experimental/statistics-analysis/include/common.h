@@ -16,7 +16,8 @@ enum motion_type {
 };
 
 struct camera_params {
-  float focal_length;
+  float fx;
+  float fy;
   float cx;
   float cy;
 };
