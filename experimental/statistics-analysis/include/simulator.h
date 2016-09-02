@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include <GL/glut.h>
+#include <iostream>
 
 void simulate_images(grid_params grid_description,
   motion_type motion,

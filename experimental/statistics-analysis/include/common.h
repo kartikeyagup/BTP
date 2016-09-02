@@ -8,6 +8,11 @@
 struct grid_params {
   int gridx;
   int gridy;
+
+  grid_params(int x, int y) {
+    gridx = x;
+    gridy = y;
+  }
 };
 
 enum motion_type {
@@ -20,6 +25,14 @@ struct camera_params {
   float fy;
   float cx;
   float cy;
+
+  camera_params(float focalx, float focaly,
+    float centerx, float centery) {
+    fx = focalx;
+    fy = focaly;
+    cx = centerx;
+    cy = centery;
+  }
 };
 
 struct camera_frame {
