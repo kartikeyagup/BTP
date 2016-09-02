@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-project(lk-tracker)
+project(sensitivity-analysis)
 
 #########################################################
 # FIND GLUT
@@ -31,11 +31,17 @@ find_package(OpenCV REQUIRED)
 #########################################################
 include_directories(${OpenCV_INCLUDE_DIRS} include)
 
-add_library(helpers-cc src/helpers.cc)
+add_library(common-cc src/common.cc)
+add_library(simulator-cc src/simulator.cc)
+add_library(statistics-cc src/statistics.cc)
+add_library(triangulate-cc src/triangulate.cc)
 
-add_executable(demo scripts/demo.cpp)
-target_link_libraries(demo )
-target_link_libraries(demo helpers-cc)
-target_link_libraries(demo ${OPENGL_LIBRARIES} 
+
+add_executable(sensitivity scripts/sensitivity.cpp)
+target_link_libraries(sensitivity common-cc 
+                           simulator-cc
+                           statistics-cc
+                           triangulate-cc)
+target_link_libraries(sensitivity ${OPENGL_LIBRARIES} 
                            ${GLUT_LIBRARY} 
                            ${OpenCV_LIBS})
