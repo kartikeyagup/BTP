@@ -18,10 +18,9 @@ int main(int argc, char **argv) {
         RIGHT, 15, 10, 100,
         intrinsics, starting_point,
         output_frames);    
-    cv::namedWindow("Display Images");
-    for (int i=0; i< output_frames.size(); i++) {
-        cv::imshow("Display Images", output_frames[i].image);
-        cv::waitKey(0);
-    }
+
+    std::vector<std::vector<cv::Point3f> > triangulated = 
+        detect_triangulate(output_frames);
+
     return 0;
 }

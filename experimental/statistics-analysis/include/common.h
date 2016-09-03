@@ -3,9 +3,11 @@
 
 #include <Eigen/Dense>
 #include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <string>
 #include <math.h>
+#include <iostream>
 
 #define PI 3.14159265
 
@@ -55,6 +57,19 @@ struct camera_frame {
     rotation = obj.rotation;
     position = obj.position;
     intrinsics = obj.intrinsics;
+  }
+};
+
+struct triangulation_bundle {
+  camera_frame camera;
+  cv::Point2f pt;
+
+  triangulation_bundle() { };
+
+  triangulation_bundle(camera_frame cam, 
+    cv::Point2f point) {
+    camera = cam;
+    pt = point;
   }
 };
 

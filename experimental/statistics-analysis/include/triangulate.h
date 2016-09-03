@@ -6,4 +6,8 @@
 std::vector<std::vector<cv::Point3f> > detect_triangulate(
   std::vector<camera_frame> camera_frames);
 
+cv::Point3f Triangulate(std::vector<triangulation_bundle> &input);
+
+std::vector<std::vector<cv::Point2f> > detect(cv::Mat &image);
+
 #endif
