@@ -23,7 +23,7 @@ if(NOT OPENGL_FOUND)
     message(ERROR " OPENGL not found!")
 endif(NOT OPENGL_FOUND)
 #########################################################
-# FIND OPENGL
+# FIND OPENCV
 #########################################################
 find_package(OpenCV REQUIRED)
 #########################################################
@@ -32,17 +32,15 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS} include)
 
 # add_library(common-cc src/common.cc)
-add_library(simulator-cc src/simulator.cc
-                         src/common.cc)
-add_library(statistics-cc src/statistics.cc)
-add_library(triangulate-cc src/triangulate.cc)
+add_library(helpers-cc src/simulator.cc
+                         src/common.cc
+                         src/statistics.cc
+                         src/triangulate.cc)
 
 
 add_executable(sensitivity scripts/sensitivity.cpp)
 target_link_libraries(sensitivity  
-                           simulator-cc
-                           statistics-cc
-                           triangulate-cc)
+                           helpers-cc)
 target_link_libraries(sensitivity ${OPENGL_LIBRARIES} 
                            ${GLUT_LIBRARY} 
                            ${OpenCV_LIBS})
