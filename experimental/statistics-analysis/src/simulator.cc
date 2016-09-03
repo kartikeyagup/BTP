@@ -41,7 +41,9 @@ void display(void) {
   for (int i=0; i<5; i++) {
     for (int j=0; j<5; j++) {
       glPushMatrix();
-      glColor3f(0, 0, 1);
+      glColor3f(getColorR(i,j),
+         getColorG(i, j), 
+         getColorB(i, j));
       glTranslatef(-200 + 100*i, -200 + 100*j, 0);
       glutSolidSphere(10, 31, 10);
       glPopMatrix();      

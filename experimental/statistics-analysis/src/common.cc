@@ -17,3 +17,15 @@ void UpdatePosition(camera_frame &frame,
   frame.position.x += dx*distance;
   frame.position.z += dz*distance;
 }
+
+float getColorR(int i, int j) {
+  return 0.1 + i*0.18;
+}
+
+float getColorG(int i, int j) {
+  return 1 - j*0.18;
+}
+
+float getColorB(int i, int j) {
+  return 0.5 + (i+j)*0.05;
+}

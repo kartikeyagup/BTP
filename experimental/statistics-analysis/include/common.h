@@ -61,4 +61,8 @@ struct camera_frame {
 void UpdatePosition(camera_frame &frame, 
   float distance, motion_type direction);
 
+float getColorR(int i, int j);
+float getColorG(int i, int j);
+float getColorB(int i, int j);
+
 #endif
