@@ -12,13 +12,16 @@ int main(int argc, char **argv) {
     std::vector<camera_frame> output_frames;
     grid_params grid_description(5, 5);
     camera_params intrinsics(100, 100, 960, 540);
-    cv::Point3f starting_point(0, 0, 0);
+    cv::Point3f starting_point(0, 0, -500);
 
     simulate_images(grid_description,
-        FORWARD, 0, 5, 10,
+        LEFT, 0, 10, 100,
         intrinsics, starting_point,
-        output_frames);
-
+        output_frames);    
+    cv::namedWindow("Display Images");
+    for (int i=0; i< output_frames.size(); i++) {
+        cv::imshow("Display Images", output_frames[i].image);
+        cv::waitKey(0);
+    }
     return 0;
 }
-

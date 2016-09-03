@@ -31,14 +31,15 @@ find_package(OpenCV REQUIRED)
 #########################################################
 include_directories(${OpenCV_INCLUDE_DIRS} include)
 
-add_library(common-cc src/common.cc)
-add_library(simulator-cc src/simulator.cc)
+# add_library(common-cc src/common.cc)
+add_library(simulator-cc src/simulator.cc
+                         src/common.cc)
 add_library(statistics-cc src/statistics.cc)
 add_library(triangulate-cc src/triangulate.cc)
 
 
 add_executable(sensitivity scripts/sensitivity.cpp)
-target_link_libraries(sensitivity common-cc 
+target_link_libraries(sensitivity  
                            simulator-cc
                            statistics-cc
                            triangulate-cc)
