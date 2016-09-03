@@ -32,9 +32,9 @@ void display(void) {
     gluLookAt(present_frame.position.x, 
       present_frame.position.y, 
       present_frame.position.z,
-      present_frame.position.x, 
+      present_frame.position.x + 100 * sin(present_frame.rotation*PI/180), 
       0, 
-      0,
+      present_frame.position.z + 100 * cos(present_frame.rotation*PI/180),
       0,1,0);
   }
 
@@ -70,6 +70,7 @@ void simulate_images(grid_params grid_description,
   glEnable(GL_DEPTH_TEST);
 
   present_frame.position = starting_point; 
+  present_frame.rotation = angle;
   for (int i=0; i<num_images; i++) {
     std::cout << "Image " << i <<"\n";
     glutMainLoopEvent();

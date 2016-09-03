@@ -5,6 +5,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <string>
+#include <math.h>
+
+#define PI 3.14159265
 
 struct grid_params {
   int gridx;
@@ -18,7 +21,7 @@ struct grid_params {
 
 enum motion_type {
   FORWARD,
-  LEFT
+  RIGHT
 };
 
 struct camera_params {
@@ -40,7 +43,7 @@ struct camera_params {
 
 struct camera_frame {
   cv::Mat image;
-  Eigen::Matrix3d rotation;
+  float rotation;
   cv::Point3f position;
   camera_params intrinsics;
 

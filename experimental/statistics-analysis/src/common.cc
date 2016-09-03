@@ -9,7 +9,7 @@ void UpdatePosition(camera_frame &frame,
     dx = 0;
     dz = 1;
     break;
-  case LEFT:
+  case RIGHT:
     dx = -1;
     dz = 0;
     break; 

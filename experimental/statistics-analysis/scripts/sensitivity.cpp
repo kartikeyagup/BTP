@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
     cv::Point3f starting_point(0, 0, -500);
 
     simulate_images(grid_description,
-        LEFT, 0, 10, 100,
+        RIGHT, 30, 10, 100,
         intrinsics, starting_point,
         output_frames);    
     cv::namedWindow("Display Images");
