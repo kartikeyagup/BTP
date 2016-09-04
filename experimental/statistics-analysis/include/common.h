@@ -5,6 +5,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/video/tracking.hpp>
 #include <string>
 #include <math.h>
 #include <iostream>
@@ -27,20 +28,24 @@ enum motion_type {
 };
 
 struct camera_params {
-  float fx;
-  float fy;
+  float f;
   float cx;
   float cy;
 
   camera_params() { };
 
-  camera_params(float focalx, float focaly,
+  camera_params(float focal,
     float centerx, float centery) {
-    fx = focalx;
-    fy = focaly;
+    f = focal;
     cx = centerx;
     cy = centery;
   };
+
+  camera_params(const camera_params &obj) {
+    f = obj.f;
+    cx = obj.cx;
+    cy = obj.cy;
+  }
 };
 
 struct camera_frame {

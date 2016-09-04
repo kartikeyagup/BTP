@@ -73,6 +73,7 @@ void simulate_images(grid_params grid_description,
 
   present_frame.position = starting_point; 
   present_frame.rotation = angle;
+  present_frame.intrinsics = intrinsics;
   for (int i=0; i<num_images; i++) {
     std::cout << "Image " << i <<"\n";
     glutMainLoopEvent();
