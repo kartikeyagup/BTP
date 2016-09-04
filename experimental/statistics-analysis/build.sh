@@ -1,4 +1,3 @@
-
 if [ ! -d build ]; then
   echo "Creating build"
   mkdir build
@@ -14,4 +13,5 @@ if [ -f sensitivity ]; then
     rm -R tempdir
   fi
   build/sensitivity tempdir
-fi 
+fi
+ 
