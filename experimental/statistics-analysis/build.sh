@@ -10,5 +10,8 @@ rm -rf sensitivity
 make
 if [ -f sensitivity ]; then 
   cd ..
-  build/sensitivity
+  if [ -d tempdir ]; then
+    rm -R tempdir
+  fi
+  build/sensitivity tempdir
 fi 

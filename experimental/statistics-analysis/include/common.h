@@ -9,6 +9,8 @@
 #include <string>
 #include <math.h>
 #include <iostream>
+#include <fstream>
+#include <stdlib.h>
 
 #define PI 3.14159265
 
