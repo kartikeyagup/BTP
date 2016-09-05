@@ -46,7 +46,10 @@ void dump_disk(std::vector<std::vector<cv::Point3f> > inputpoints,
            << intrinsics.cy << "\n";
   // starting pt
   infofile << starting_point << "\n";
+  // num_images
+  infofile << num_images <<"\n";
   infofile.close();
+
 
   // Saving images
   for (int i=0; i<cam_frames.size(); i++) {
