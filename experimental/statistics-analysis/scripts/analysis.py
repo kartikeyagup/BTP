@@ -11,6 +11,9 @@ class TriangulationData:
   def get(self, i, j, k):
     return self.grid[i][j][k]
 
+  def get_param(self,param):
+    return self.info[param]
+
 class CummulativeData:
   def __init__(self, rootfolder):
     self.rootfolder = rootfolder
@@ -27,7 +30,18 @@ class CummulativeData:
         sp = fig.add_subplot(5,5,5*i +j+1)
         sp.hist(self.get_all(i,j,dim))
     fig.show()
-    x=raw_input()
+    # x=raw_input()
+
+  ##### k is x or y or z value of the graph and i and j are the coordinates of the points 
+  def make_plot(self,i,j,k,param):
+    grid_points = self.get_all(i,j,k)
+    param_plot = [x.get_param(param) for x in self.all_data]  
+    plot_pair = zip(param_plot,grid_points)
+    plot_pair.sort(key=lambda x:x[0])
+    plot_pair = zip(*plot_pair)
+    plt.plot(plot_pair[0],plot_pair[1])
+    plt.show()
+    y = raw_input()
 
 def readgridfile(filename):
   f = open(filename,'r')
@@ -50,15 +64,16 @@ def readinfofile(filename):
   info["gridsize"] = map(int,lines[0].split())
   info["angle"] = int(lines[1])
   info["motion"] = int(lines[2])
-  info["distance"] = int(lines[3])
+  info["distance"] = float(lines[3])
   info["intrinsics"] = map(float, lines[4].split())
   info["starting_point"] = map(float, lines[5][1:-1].split(','))
   return info
 
 def main():
   cumdata = CummulativeData("data")
-  print cumdata.get_all(3,4,0)
-  cumdata.make_histograms(0)
+  # print cumdata.get_all(3,4,0)
+  # cumdata.make_histograms(0)
+  cumdata.make_plot(0,0,2,"distance")
   # print cumdata.all_data_dirs
   # file1 = TriangulationData("tempdir")
   # print file1.grid
