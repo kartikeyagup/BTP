@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
+#include <gflags/gflags.h>
 
 #define PI 3.14159265
 
