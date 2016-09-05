@@ -40,6 +40,10 @@ endif(NOT OPENGL_FOUND)
 #########################################################
 find_package(OpenCV REQUIRED)
 #########################################################
+# FIND GFLAGS
+#########################################################
+find_package(gflags REQUIRED)
+#########################################################
 # Include Files
 #########################################################
 include_directories(${OpenCV_INCLUDE_DIRS} include)
@@ -56,4 +60,5 @@ target_link_libraries(sensitivity
                            helpers-cc)
 target_link_libraries(sensitivity ${OPENGL_LIBRARIES} 
                            ${GLUT_LIBRARY} 
-                           ${OpenCV_LIBS})
+                           ${OpenCV_LIBS}
+                           gflags)
