@@ -12,6 +12,5 @@ if [ -f sensitivity ]; then
   if [ -d tempdir ]; then
     rm -R tempdir
   fi
-  build/sensitivity tempdir
+  build/sensitivity
 fi
- 
