@@ -1,5 +1,6 @@
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 class TriangulationData:
   def __init__(self, foldername):
@@ -7,11 +8,26 @@ class TriangulationData:
     self.grid = readgridfile(foldername + "/grid.txt")
     self.info = readinfofile(foldername + "/info.txt")
 
+  def get(self, i, j, k):
+    return self.grid[i][j][k]
+
 class CummulativeData:
   def __init__(self, rootfolder):
     self.rootfolder = rootfolder
-    # TODO: Iterate in all directories and process
-    self.all_data = []
+    self.all_data_dirs = [x[1] for x in os.walk(rootfolder)][0]
+    self.all_data = [TriangulationData(rootfolder+"/"+x) for x in self.all_data_dirs]
+
+  def get_all(self,i,j,k):
+    return [x.get(i,j,k) for x in self.all_data]
+
+  def make_histograms(self, dim):
+    fig = plt.figure()
+    for i in xrange(5):
+      for j in xrange(5):
+        sp = fig.add_subplot(5,5,5*i +j+1)
+        sp.hist(self.get_all(i,j,dim))
+    fig.show()
+    x=raw_input()
 
 def readgridfile(filename):
   f = open(filename,'r')
@@ -40,10 +56,14 @@ def readinfofile(filename):
   return info
 
 def main():
-  file1 = TriangulationData("tempdir")
-  print file1.grid
-  print file1.foldername
-  print file1.info
+  cumdata = CummulativeData("data")
+  print cumdata.get_all(3,4,0)
+  cumdata.make_histograms(0)
+  # print cumdata.all_data_dirs
+  # file1 = TriangulationData("tempdir")
+  # print file1.grid
+  # print file1.foldername
+  # print file1.info
 
 if __name__ == '__main__':
   main()
