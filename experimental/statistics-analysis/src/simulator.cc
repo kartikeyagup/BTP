@@ -28,13 +28,13 @@ void display(void) {
     glLoadIdentity();  
   } else {
     glLoadIdentity();
-    gluPerspective(120, 16.0/9.0, 0.1, 9000);
+    gluPerspective(120, 16.0/9.0, 100, 3000);
     gluLookAt(present_frame.position.x, 
       present_frame.position.y, 
       present_frame.position.z,
-      present_frame.position.x + 100 * sin(present_frame.rotation*PI/180), 
-      0, 
-      present_frame.position.z + 100 * cos(present_frame.rotation*PI/180),
+      present_frame.position.x + 120 * sin(present_frame.rotation*PI/180), 
+      present_frame.position.y, 
+      present_frame.position.z + 120 * cos(present_frame.rotation*PI/180),
       0,1,0);
   }
 

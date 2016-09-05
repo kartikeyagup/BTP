@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
         distance,
         intrinsics,
         starting_point,
+        output_frames,
         FLAGS_dirname);
     gflags::ShutDownCommandLineFlags();
     return 0;
