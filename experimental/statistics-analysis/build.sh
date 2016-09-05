@@ -5,6 +5,12 @@ fi
 
 cd build
 cmake ..
+rm -rf sensitivity
 make
-cd ..
-build/sensitivity
+if [ -f sensitivity ]; then 
+  cd ..
+  if [ -d tempdir ]; then
+    rm -R tempdir
+  fi
+  build/sensitivity
+fi

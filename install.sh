@@ -11,6 +11,9 @@ sudo apt-get -E -y autoremove
 # Build tools:
 sudo apt-get -E install -y build-essential cmake
 
+# GFlags
+sudo apt-get -E install -y libgflags-dev
+
 # GUI (if you want to use GTK instead of Qt, replace 'qt5-default' with 'libgtkglext1-dev' and remove '-DWITH_QT=ON' option in CMake):
 sudo apt-get -E install -y qt5-default libvtk6-dev
 
