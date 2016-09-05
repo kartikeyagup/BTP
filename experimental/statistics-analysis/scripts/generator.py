@@ -1,7 +1,7 @@
 import subprocess
 
 def main():
-  for i in xrange(1,100):
+  for i in xrange(1,101,10):
     print "Calling", i
     dirname = "data/distance_" + str(i)
     command = "build/sensitivity --distance="+str(i)+" --dirname="+dirname
