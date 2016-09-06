@@ -60,15 +60,15 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
   }
   float theta = input[0].camera.rotation;
   float *rotation = new float[9];
-  rotation[0] = cos(theta);
+  rotation[0] = cos(theta*PI/180);
   rotation[1] = 0;
-  rotation[2] = sin(theta);
+  rotation[2] = sin(theta*PI/180);
   rotation[3] = 0;
   rotation[4] = 1;
   rotation[5] = 0;
-  rotation[6] = -sin(theta);
+  rotation[6] = -sin(theta*PI/180);
   rotation[7] = 0;
-  rotation[8] = cos(theta);
+  rotation[8] = cos(theta*PI/180);
   
   int num_eqs = 2*input.size();
   int num_vars = 3;
@@ -86,6 +86,9 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
     translation[2] = rotation[6]*input[i].camera.position.x + 
      rotation[7]*input[i].camera.position.y +
      rotation[8]*input[i].camera.position.z;
+    translation[0] *= -1;
+    translation[1] *= -1;
+    translation[2] *= -1;
     int row = 2*i;
 
     A.at<float>(row, 0) = rotation[0] - input[i].pt.x*rotation[6];
@@ -103,9 +106,9 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
   cv::solve(A, B, X, cv::DECOMP_SVD);
   delete rotation;
   cv::Point3f answer;
-  answer.x = X.at<float>(0,0);
-  answer.y = X.at<float>(1,0);
-  answer.z = X.at<float>(2,0);
+  answer.x = X.at<float>(0,0) - input[0].camera.position.x;
+  answer.y = X.at<float>(1,0) - input[0].camera.position.y;
+  answer.z = X.at<float>(2,0) - input[0].camera.position.z;
   return answer;
 }
 
