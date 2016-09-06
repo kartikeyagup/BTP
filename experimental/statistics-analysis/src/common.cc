@@ -7,9 +7,9 @@ void UpdatePosition(camera_frame &frame,
   switch (direction) {
   case FORWARD:
     dx = 0;
-    dz = 1;
+    dz = -1;
     break;
-  case RIGHT:
+  case LEFT:
     dx = -1;
     dz = 0;
     break; 

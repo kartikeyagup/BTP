@@ -32,9 +32,9 @@ void display(void) {
     gluLookAt(present_frame.position.x, 
       present_frame.position.y, 
       present_frame.position.z,
-      present_frame.position.x + 120 * sin(present_frame.rotation*PI/180), 
+      present_frame.position.x - 100 * sin(present_frame.rotation*PI/180), 
       present_frame.position.y, 
-      present_frame.position.z + 120 * cos(present_frame.rotation*PI/180),
+      present_frame.position.z - 100 * cos(present_frame.rotation*PI/180),
       0,1,0);
   }
 
