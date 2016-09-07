@@ -8,6 +8,7 @@ void dump_disk(std::vector<std::vector<cv::Point3f> > inputpoints,
   float distance,
   camera_params intrinsics,
   cv::Point3f starting_point,
+  std::vector<camera_frame> &cam_frames,
   std::string dump_directory) {
 
   std::string mk_command = "mkdir " + dump_directory;
@@ -45,5 +46,13 @@ void dump_disk(std::vector<std::vector<cv::Point3f> > inputpoints,
            << intrinsics.cy << "\n";
   // starting pt
   infofile << starting_point << "\n";
+  // num_images
+  infofile << num_images <<"\n";
   infofile.close();
+
+
+  // Saving images
+  for (int i=0; i<cam_frames.size(); i++) {
+    cv::imwrite(dump_directory+"/image_"+std::to_string(i)+".png", cam_frames[i].image); 
+  }
 };

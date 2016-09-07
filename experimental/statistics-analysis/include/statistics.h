@@ -11,6 +11,7 @@ void dump_disk(std::vector<std::vector<cv::Point3f> > inputpoints,
   float distance,
   camera_params intrinsics,
   cv::Point3f starting_point,
+  std::vector<camera_frame> &cam_frames,
   std::string dump_directory);
 
 #endif

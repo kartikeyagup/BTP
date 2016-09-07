@@ -9,9 +9,9 @@ DEFINE_double(distance, 100.0, "Distance  between images");
 DEFINE_int32(num_images, 3, "Number of images");
 DEFINE_double(starting_x, 0, "Starting x point");
 DEFINE_double(starting_y, 0, "Starting y point");
-DEFINE_double(starting_z, -500, "Starting z point");
+DEFINE_double(starting_z, 1000, "Starting z point");
 DEFINE_string(dirname, "tempdir", "Directory to dump in");
-DEFINE_double(angle, 0, "Angle at which images are taken");
+DEFINE_double(angle, 45, "Angle at which images are taken");
 
 int main(int argc, char **argv) {
     gflags::SetUsageMessage("sensitivity --help");
@@ -20,11 +20,11 @@ int main(int argc, char **argv) {
     
     std::vector<camera_frame> output_frames;
     grid_params grid_description(5, 5);
-    camera_params intrinsics(1000, 640, 360);
+    camera_params intrinsics(0.57735*360, 640, 360);
     cv::Point3f starting_point(FLAGS_starting_x, 
                                FLAGS_starting_y,
                                FLAGS_starting_z);
-    motion_type motion = RIGHT;
+    motion_type motion = LEFT;
     float angle = FLAGS_angle;
     int num_images = FLAGS_num_images;
     float distance = FLAGS_distance;
@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
         distance,
         intrinsics,
         starting_point,
+        output_frames,
         FLAGS_dirname);
     gflags::ShutDownCommandLineFlags();
     return 0;

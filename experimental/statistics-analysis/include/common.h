@@ -27,7 +27,7 @@ struct grid_params {
 
 enum motion_type {
   FORWARD,
-  RIGHT
+  LEFT
 };
 
 struct camera_params {
