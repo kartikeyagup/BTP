@@ -70,6 +70,10 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
   rotation[7] = 0;
   rotation[8] = cos(theta*PI/180);
   
+  rotation[2] *= -1;
+  rotation[5] *= -1;
+  rotation[8] *= -1;
+
   int num_eqs = 2*input.size();
   int num_vars = 3;
   cv::Mat A(num_eqs, 3, CV_32F);
@@ -89,6 +93,7 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
     translation[0] *= -1;
     translation[1] *= -1;
     translation[2] *= -1;
+    // translation = - RC
     int row = 2*i;
 
     A.at<float>(row, 0) = rotation[0] - input[i].pt.x*rotation[6];
@@ -106,9 +111,9 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
   cv::solve(A, B, X, cv::DECOMP_SVD);
   delete rotation;
   cv::Point3f answer;
-  answer.x = X.at<float>(0,0) - input[0].camera.position.x;
-  answer.y = X.at<float>(1,0) - input[0].camera.position.y;
-  answer.z = X.at<float>(2,0) - input[0].camera.position.z;
+  answer.x = X.at<float>(0,0);
+  answer.y = X.at<float>(1,0);
+  answer.z = X.at<float>(2,0);
   return answer;
 }
 
