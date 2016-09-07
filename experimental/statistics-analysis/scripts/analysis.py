@@ -39,6 +39,27 @@ class TriangulationData:
     ans = ans/25.0 
     return ans
 
+  def get_apical_angle(self,i,j):
+    point_x = self.grid[i][j][0]
+    point_y = self.grid[i][j][1]
+    point_z = self.grid[i][j][2]
+    
+    o1_x = self.info["starting_point"][0]
+    o1_y = self.info["starting_point"][1]
+    o1_z = self.info["starting_point"][2]
+
+    o2_x = self.info["starting_point"][0] - self.info["distance"]
+    o2_y = o1_y
+    o2_z = o1_z
+
+    dot_prod = np.dot([point_x-o1_x,point_y-o1_y,point_z-o1_z],[point_x-o2_x,point_y-o2_y,point_z-o2_z])
+
+    normal_o1_pt = math.sqrt(math.pow((point_x-o1_x),2) + math.pow((point_y-o1_y),2) + math.pow((point_z-o1_z),2))
+    normal_o2_pt = math.sqrt(math.pow((point_x-o2_x),2) + math.pow((point_y-o2_y),2) + math.pow((point_z-o2_z),2))
+
+    return math.acos(dot_prod/(normal_o1_pt*normal_o2_pt))*(180/math.pi)
+
+
 class CummulativeData:
   def __init__(self, rootfolder):
     self.rootfolder = rootfolder
@@ -47,6 +68,9 @@ class CummulativeData:
 
   def get_all(self,i,j,k):
     return [x.get(i,j,k) for x in self.all_data]
+
+  def get_all_apical_angle(self,i,j):
+    return [x.get_apical_angle(i,j) for x in self.all_data]
 
   def make_histograms(self, dim):
     fig = plt.figure()
@@ -100,6 +124,16 @@ class CummulativeData:
     plt.show()
     z = raw_input()
 
+  # get apical angle vs depth error graph in z direction i.e. the depth 
+  def plot_apical_angle(self, i, j):
+    depth_list = self.get_all(i,j,2)
+    epical_angle_list = self.get_all_apical_angle(i,j)
+    # distance_list = [x.]
+    plt.plot(epical_angle_list,depth_list, "o")
+    print depth_list 
+    print epical_angle_list
+    plt.show()
+
 def readgridfile(filename):
   f = open(filename,'r')
   lines = f.read().split('\n')[:-1]
@@ -133,7 +167,8 @@ def main():
   # cumdata.make_histograms(0)
   # cumdata.make_plot(0,0,2,"distance")
 
-  cumdata.plot_avg(2,"distance")
+  # cumdata.plot_avg(2,"distance")
+  cumdata.plot_apical_angle(0,0)
   # print cumdata.all_data_dirs
   # file1 = TriangulationData("tempdir")
   # print file1.grid

@@ -4,7 +4,7 @@ import itertools
 def main():
   num_threads=40
   distances = [i for i in xrange(1,51,10)]
-  angles = [i for i in xrange(0,30,10)]
+  angles = [i for i in xrange(0,30,5)]
   starting_points_z = [i for i in xrange(300,500,100)]
   num_images=[2]
   dump_images=[0]
