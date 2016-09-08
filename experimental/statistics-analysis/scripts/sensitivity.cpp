@@ -14,6 +14,7 @@ DEFINE_string(dirname, "tempdir", "Directory to dump in");
 DEFINE_double(angle, 45, "Angle at which images are taken");
 DEFINE_bool(verbose, false, "Print Statements");
 DEFINE_bool(dump_images, false, "Store Images");
+DEFINE_bool(straight_motion, false, "Move straight");
 
 int main(int argc, char **argv) {
     gflags::SetUsageMessage("sensitivity --help");
@@ -27,6 +28,9 @@ int main(int argc, char **argv) {
                                FLAGS_starting_y,
                                FLAGS_starting_z);
     motion_type motion = LEFT;
+    if (FLAGS_straight_motion) {
+        motion = FORWARD;
+    }
     float angle = FLAGS_angle;
     int num_images = FLAGS_num_images;
     float distance = FLAGS_distance;
