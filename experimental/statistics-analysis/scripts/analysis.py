@@ -130,8 +130,40 @@ class CummulativeData:
     epical_angle_list = self.get_all_apical_angle(i,j)
     # distance_list = [x.]
     plt.plot(epical_angle_list,depth_list, "o")
-    print depth_list 
-    print epical_angle_list
+    # print depth_list 
+    # print epical_angle_list
+    plt.show()
+
+  def plot_cummulative_distance(self, i, j, fixed):
+    # i,j is grid id
+    # fixed is table of (theta, starting position)
+    delta_d_alpha = []
+    for elem in self.all_data:
+      if elem.info["angle"] == fixed["angle"]:
+        if elem.info["starting_point"] == fixed["starting_point"]:
+          delta_d_alpha.append([elem.grid[i][j][2],
+                                elem.info["distance"],
+                                elem.get_apical_angle(i,j)])
+    delta_d_alpha.sort(key=lambda x:x[1])
+    splitted = zip(*delta_d_alpha)
+    plt.plot(splitted[1], splitted[0], 'r')
+    plt.plot(splitted[1], splitted[2], 'g')
+    plt.show()
+
+  def plot_cummulative_angle(self, i, j, fixed):
+    # i,j is grid id
+    # fixed is table of (distance, starting position)
+    delta_d_alpha = []
+    for elem in self.all_data:
+      if elem.info["distance"] == fixed["distance"]:
+        if elem.info["starting_point"] == fixed["starting_point"]:
+          delta_d_alpha.append([elem.grid[i][j][2],
+                                elem.info["angle"],
+                                elem.get_apical_angle(i,j)])
+    delta_d_alpha.sort(key=lambda x:x[1])
+    splitted = zip(*delta_d_alpha)
+    plt.plot(splitted[1], splitted[0], 'r')
+    plt.plot(splitted[1], splitted[2], 'g')
     plt.show()
 
 def readgridfile(filename):
@@ -169,6 +201,8 @@ def main():
 
   # cumdata.plot_avg(2,"distance")
   cumdata.plot_apical_angle(0,0)
+  cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,300]})
+  cumdata.plot_cummulative_angle(0,0,{"distance":500,"starting_point":[0,0,1000]})
   # print cumdata.all_data_dirs
   # file1 = TriangulationData("tempdir")
   # print file1.grid
