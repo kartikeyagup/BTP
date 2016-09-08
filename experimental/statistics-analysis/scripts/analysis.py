@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import host_subplot
+import mpl_toolkits.axisartist as AA
 import numpy as np
 import os
 import math
@@ -146,9 +148,27 @@ class CummulativeData:
                                 elem.get_apical_angle(i,j)])
     delta_d_alpha.sort(key=lambda x:x[1])
     splitted = zip(*delta_d_alpha)
-    plt.plot(splitted[1], splitted[0], 'r')
-    plt.plot(splitted[1], splitted[2], 'g')
+
+    host = host_subplot(111, axes_class=AA.Axes)
+    plt.subplots_adjust(right=0.75)
+
+    par1 = host.twinx()
+
+    host.set_xlabel("Distance")
+    host.set_ylabel("Delta")
+    par1.set_ylabel("Apical Angle")
+    
+    p1, = host.plot(splitted[1], splitted[0], label="Delta")
+    p2, = par1.plot(splitted[1], splitted[2], label="Distance")
+
+    host.legend()
+
+    host.axis["left"].label.set_color(p1.get_color())
+    par1.axis["right"].label.set_color(p2.get_color())
+
+    plt.draw()
     plt.show()
+
 
   def plot_cummulative_angle(self, i, j, fixed):
     # i,j is grid id
@@ -201,8 +221,8 @@ def main():
 
   # cumdata.plot_avg(2,"distance")
   cumdata.plot_apical_angle(0,0)
-  cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,300]})
-  cumdata.plot_cummulative_angle(0,0,{"distance":500,"starting_point":[0,0,1000]})
+  cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,1000]})
+  # cumdata.plot_cummulative_angle(0,0,{"distance":500,"starting_point":[0,0,1000]})
   # print cumdata.all_data_dirs
   # file1 = TriangulationData("tempdir")
   # print file1.grid
