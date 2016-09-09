@@ -3,14 +3,15 @@ import itertools
 import threading
 
 def main():
-  num_threads=8
-  distances = [i for i in xrange(500,5000,100)]
+  num_threads=4
+  distances = [i for i in xrange(500,600,1)]
   angles = [i for i in xrange(15,16,1)]
   starting_points_z = [i for i in xrange(1000,1100,100)]
   num_images=[2]
   dump_images=[0]
   verbose=[0]
-  allpossibilites = itertools.product(distances,angles,starting_points_z,num_images,dump_images,verbose)
+  motion = [1]
+  allpossibilites = itertools.product(distances,angles,starting_points_z,num_images,dump_images,verbose,motion)
   params = list(allpossibilites)
   chunksize = len(params)/num_threads
   threads=[]
@@ -27,8 +28,8 @@ def simulateAll(listParams):
   for param in listParams:
     simulateData(param)
 
-def simulateData((distance,angle,starting_point,num_images,dump_images,verbose)):
-  dirname = "data/"+"_".join(["d",str(distance),"a",str(angle),"stz",str(starting_point),"n",str(num_images)])
+def simulateData((distance,angle,starting_point,num_images,dump_images,verbose,motion)):
+  dirname = "data/"+"_".join(["d",str(distance),"a",str(angle),"stz",str(starting_point),"n",str(num_images),"m",str(motion)])
   command = "build/sensitivity"
   command += " --distance="+str(distance)
   command += " --dirname="+dirname
@@ -37,6 +38,7 @@ def simulateData((distance,angle,starting_point,num_images,dump_images,verbose))
   command += " --num_images="+str(num_images)
   command += " --dump_images="+str(dump_images)
   command += " --verbose="+str(verbose)    
+  command += " --motion="+str(motion)
   os.system(command)
 
 if __name__ == '__main__':

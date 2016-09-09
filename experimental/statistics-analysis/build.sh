@@ -12,5 +12,5 @@ if [ -f sensitivity ]; then
   if [ -d tempdir ]; then
     rm -R tempdir
   fi
-  build/sensitivity
+  build/sensitivity --motion=1 --dump_images=1 --verbose=1
 fi

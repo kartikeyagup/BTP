@@ -50,12 +50,17 @@ class TriangulationData:
     o1_y = self.info["starting_point"][1]
     o1_z = self.info["starting_point"][2]
 
-    o2_x = self.info["starting_point"][0] - self.info["distance"]
+    o2_x = o1_x 
     o2_y = o1_y
     o2_z = o1_z
-
-    dot_prod = np.dot([point_x-o1_x,point_y-o1_y,point_z-o1_z],[point_x-o2_x,point_y-o2_y,point_z-o2_z])
-
+    if (self.info["motion"] == 1):
+      # Left motion
+      o2_x -= self.info["distance"]
+    elif (self.info["motion"] == 0):
+      # Forward motion
+      o2_z -= self.info["distance"]
+    dot_prod = np.dot([point_x-o1_x,point_y-o1_y,point_z-o1_z],
+                      [point_x-o2_x,point_y-o2_y,point_z-o2_z])
     normal_o1_pt = math.sqrt(math.pow((point_x-o1_x),2) + math.pow((point_y-o1_y),2) + math.pow((point_z-o1_z),2))
     normal_o2_pt = math.sqrt(math.pow((point_x-o2_x),2) + math.pow((point_y-o2_y),2) + math.pow((point_z-o2_z),2))
 
