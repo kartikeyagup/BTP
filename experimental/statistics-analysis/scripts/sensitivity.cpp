@@ -12,6 +12,9 @@ DEFINE_double(starting_y, 0, "Starting y point");
 DEFINE_double(starting_z, 1000, "Starting z point");
 DEFINE_string(dirname, "tempdir", "Directory to dump in");
 DEFINE_double(angle, 45, "Angle at which images are taken");
+DEFINE_bool(verbose, false, "Print Statements");
+DEFINE_bool(dump_images, false, "Store Images");
+DEFINE_bool(motion, false, "Move straight");
 
 int main(int argc, char **argv) {
     gflags::SetUsageMessage("sensitivity --help");
@@ -25,6 +28,9 @@ int main(int argc, char **argv) {
                                FLAGS_starting_y,
                                FLAGS_starting_z);
     motion_type motion = LEFT;
+    if (FLAGS_motion) {
+        motion = FORWARD;
+    }
     float angle = FLAGS_angle;
     int num_images = FLAGS_num_images;
     float distance = FLAGS_distance;
@@ -37,9 +43,11 @@ int main(int argc, char **argv) {
     std::vector<std::vector<cv::Point3f> > triangulated = 
         detect_triangulate(output_frames);
 
-    for (int i=0; i<5; i++) {
-        for (int j=0; j<5; j++) {
-            std::cout <<i<<"\t" << j <<"\t" << triangulated[i][j] <<"\n";
+    if (FLAGS_verbose) {
+        for (int i=0; i<5; i++) {
+            for (int j=0; j<5; j++) {
+                std::cout <<i<<"\t" << j <<"\t" << triangulated[i][j] <<"\n";
+            }
         }
     }
 
@@ -52,7 +60,8 @@ int main(int argc, char **argv) {
         intrinsics,
         starting_point,
         output_frames,
-        FLAGS_dirname);
+        FLAGS_dirname,
+        FLAGS_dump_images);
     gflags::ShutDownCommandLineFlags();
     return 0;
 }

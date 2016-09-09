@@ -9,13 +9,13 @@ void dump_disk(std::vector<std::vector<cv::Point3f> > inputpoints,
   camera_params intrinsics,
   cv::Point3f starting_point,
   std::vector<camera_frame> &cam_frames,
-  std::string dump_directory) {
+  std::string dump_directory,
+  bool dump_images) {
 
   std::string mk_command = "mkdir " + dump_directory;
   int result = system(mk_command.c_str());
   assert(result==0);
-  std::cerr << "Created output directory\n";
-
+  
   // Writing grid
   std::ofstream gridfile;
   gridfile.open(dump_directory + "/grid.txt");
@@ -50,9 +50,10 @@ void dump_disk(std::vector<std::vector<cv::Point3f> > inputpoints,
   infofile << num_images <<"\n";
   infofile.close();
 
-
-  // Saving images
-  for (int i=0; i<cam_frames.size(); i++) {
-    cv::imwrite(dump_directory+"/image_"+std::to_string(i)+".png", cam_frames[i].image); 
+  if (dump_images) {
+    // Saving images
+    for (int i=0; i<cam_frames.size(); i++) {
+      cv::imwrite(dump_directory+"/image_"+std::to_string(i)+".png", cam_frames[i].image); 
+    }
   }
 };

@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import host_subplot
+import mpl_toolkits.axisartist as AA
 import numpy as np
 import os
 import math
@@ -39,6 +41,32 @@ class TriangulationData:
     ans = ans/25.0 
     return ans
 
+  def get_apical_angle(self,i,j):
+    point_x = self.grid[i][j][0]
+    point_y = self.grid[i][j][1]
+    point_z = self.grid[i][j][2]
+    
+    o1_x = self.info["starting_point"][0]
+    o1_y = self.info["starting_point"][1]
+    o1_z = self.info["starting_point"][2]
+
+    o2_x = o1_x 
+    o2_y = o1_y
+    o2_z = o1_z
+    if (self.info["motion"] == 1):
+      # Left motion
+      o2_x -= self.info["distance"]
+    elif (self.info["motion"] == 0):
+      # Forward motion
+      o2_z -= self.info["distance"]
+    dot_prod = np.dot([point_x-o1_x,point_y-o1_y,point_z-o1_z],
+                      [point_x-o2_x,point_y-o2_y,point_z-o2_z])
+    normal_o1_pt = math.sqrt(math.pow((point_x-o1_x),2) + math.pow((point_y-o1_y),2) + math.pow((point_z-o1_z),2))
+    normal_o2_pt = math.sqrt(math.pow((point_x-o2_x),2) + math.pow((point_y-o2_y),2) + math.pow((point_z-o2_z),2))
+
+    return math.acos(dot_prod/(normal_o1_pt*normal_o2_pt))*(180/math.pi)
+
+
 class CummulativeData:
   def __init__(self, rootfolder):
     self.rootfolder = rootfolder
@@ -47,6 +75,9 @@ class CummulativeData:
 
   def get_all(self,i,j,k):
     return [x.get(i,j,k) for x in self.all_data]
+
+  def get_all_apical_angle(self,i,j):
+    return [x.get_apical_angle(i,j) for x in self.all_data]
 
   def make_histograms(self, dim):
     fig = plt.figure()
@@ -100,6 +131,66 @@ class CummulativeData:
     plt.show()
     z = raw_input()
 
+  # get apical angle vs depth error graph in z direction i.e. the depth 
+  def plot_apical_angle(self, i, j):
+    depth_list = self.get_all(i,j,2)
+    epical_angle_list = self.get_all_apical_angle(i,j)
+    # distance_list = [x.]
+    plt.plot(epical_angle_list,depth_list, "o")
+    # print depth_list 
+    # print epical_angle_list
+    plt.show()
+
+  def plot_cummulative_distance(self, i, j, fixed):
+    # i,j is grid id
+    # fixed is table of (theta, starting position)
+    delta_d_alpha = []
+    for elem in self.all_data:
+      if elem.info["angle"] == fixed["angle"]:
+        if elem.info["starting_point"] == fixed["starting_point"]:
+          delta_d_alpha.append([elem.grid[i][j][2],
+                                elem.info["distance"],
+                                elem.get_apical_angle(i,j)])
+    delta_d_alpha.sort(key=lambda x:x[1])
+    splitted = zip(*delta_d_alpha)
+
+    host = host_subplot(111, axes_class=AA.Axes)
+    plt.subplots_adjust(right=0.75)
+
+    par1 = host.twinx()
+
+    host.set_xlabel("Distance")
+    host.set_ylabel("Delta")
+    par1.set_ylabel("Apical Angle")
+    
+    p1, = host.plot(splitted[1], splitted[0], label="Delta")
+    p2, = par1.plot(splitted[1], splitted[2], label="Distance")
+
+    host.legend()
+
+    host.axis["left"].label.set_color(p1.get_color())
+    par1.axis["right"].label.set_color(p2.get_color())
+
+    plt.draw()
+    plt.show()
+
+
+  def plot_cummulative_angle(self, i, j, fixed):
+    # i,j is grid id
+    # fixed is table of (distance, starting position)
+    delta_d_alpha = []
+    for elem in self.all_data:
+      if elem.info["distance"] == fixed["distance"]:
+        if elem.info["starting_point"] == fixed["starting_point"]:
+          delta_d_alpha.append([elem.grid[i][j][2],
+                                elem.info["angle"],
+                                elem.get_apical_angle(i,j)])
+    delta_d_alpha.sort(key=lambda x:x[1])
+    splitted = zip(*delta_d_alpha)
+    plt.plot(splitted[1], splitted[0], 'r')
+    plt.plot(splitted[1], splitted[2], 'g')
+    plt.show()
+
 def readgridfile(filename):
   f = open(filename,'r')
   lines = f.read().split('\n')[:-1]
@@ -133,7 +224,10 @@ def main():
   # cumdata.make_histograms(0)
   # cumdata.make_plot(0,0,2,"distance")
 
-  cumdata.plot_avg(2,"distance")
+  # cumdata.plot_avg(2,"distance")
+  cumdata.plot_apical_angle(0,0)
+  cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,1000]})
+  # cumdata.plot_cummulative_angle(0,0,{"distance":500,"starting_point":[0,0,1000]})
   # print cumdata.all_data_dirs
   # file1 = TriangulationData("tempdir")
   # print file1.grid
