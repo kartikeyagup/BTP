@@ -220,19 +220,12 @@ def readinfofile(filename):
 
 def main():
   cumdata = CummulativeData("data")
-  # print cumdata.get_all(3,4,0)
   # cumdata.make_histograms(0)
   # cumdata.make_plot(0,0,2,"distance")
-
   # cumdata.plot_avg(2,"distance")
   cumdata.plot_apical_angle(0,0)
   cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,1000]})
   # cumdata.plot_cummulative_angle(0,0,{"distance":500,"starting_point":[0,0,1000]})
-  # print cumdata.all_data_dirs
-  # file1 = TriangulationData("tempdir")
-  # print file1.grid
-  # print file1.foldername
-  # print file1.info
 
 if __name__ == '__main__':
   main()
