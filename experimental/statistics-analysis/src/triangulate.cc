@@ -1,44 +1,44 @@
 #include "triangulate.h"
 
-std::vector<std::vector<cv::Point2f> > detect(cv::Mat &image) {
-  std::vector<std::vector<cv::Point2f> > answer;
-  for (int i=0; i<5; i++) {
-    std::vector<cv::Point2f> temp;
-    for(int j=0; j<5; j++) {
-      temp.push_back(cv::Point2f(0,0));
-    }
-    answer.push_back(temp);
-  }
-  for (int i=0; i<5; i++) {
-    for (int j=0; j<5; j++) {
-  
-      float R, G, B;
-      R = getColorR(i, j);
-      G = getColorG(i, j);
-      B = getColorB(i, j);
-      cv::Point2f pointfound(0, 0);
-      int num_points = 0;
-      for (int k=0; k<image.cols; k++) {
-        for (int l=0; l<image.rows; l++) {
-          cv::Vec3b colorimg = image.at<cv::Vec3b>(cv::Point(k,l)); 
-          if ((abs(((int)colorimg[0]) - 255*B) < 5) &&
-              (abs(((int)colorimg[1]) - 255*G) < 5) &&
-              (abs(((int)colorimg[2]) - 255*R) < 5)) {
-            pointfound.x += k;
-            pointfound.y += l;
-            num_points += 1;
-          }
-        }
+std::unordered_map<TwoDPoint, cv::Point2f> detect(
+  grid_params &grid_description,
+  cv::Mat &image) {
+  std::unordered_map<TwoDPoint, cv::Point2f> answer;
+
+  std::unordered_map<Color, std::pair<cv::Point2f, int> > detection;
+  for (int k=0; k<image.cols; k++) {
+    for (int l=0; l<image.rows; l++) {
+      cv::Vec3b colorimg = image.at<cv::Vec3b>(cv::Point(k,l)); 
+      Color newcol((int)colorimg[2], (int)colorimg[1], int(colorimg[0]));
+      if (newcol.isblack()) {
+        continue;
       }
-      pointfound.x /= num_points;
-      pointfound.y /= num_points;
-      assert (num_points>0);
-      answer[i][j] = pointfound;
+      auto got = detection.find(newcol);
+      if (got == detection.end()) {
+        // New color
+        detection[newcol] = std::make_pair(cv::Point2f(k, l) , 1);
+      } else {
+        // Old color
+        detection[newcol].first.x += k;
+        detection[newcol].first.y += l;
+        detection[newcol].second += 1;
+      }
     }
   }
+
+  // Associate colors
+  for (auto kv : detection) {
+    // find color i j
+    auto ij = grid_description.c2p.find(kv.first);
+    assert (ij != grid_description.c2p.end());
+    answer[grid_description.c2p[kv.first]]=
+      cv::Point2f(kv.second.first.x/kv.second.second,
+                  kv.second.first.y/kv.second.second);
+  }
+
   return answer;
 }
-
+  
 void ConvertPoint(triangulation_bundle &bundle) {
   bundle.pt.x -= bundle.camera.intrinsics.cx;
   bundle.pt.y -= bundle.camera.intrinsics.cy;
@@ -109,24 +109,42 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
   return answer;
 }
 
-std::vector<std::vector<cv::Point3f> > detect_triangulate(
-  std::vector<camera_frame> camera_frames){
-  std::vector<std::vector<std::vector<cv::Point2f> > > all_detected;
-  for (int i=0; i<camera_frames.size(); i++) {
-    all_detected.push_back(detect(camera_frames[i].image));
-  }
-  std::vector<std::vector<cv::Point3f> > answer;
+std::unordered_map<TwoDPoint, cv::Point3f> detect_triangulate(
+  grid_params &grid_description,
+  std::vector<camera_frame> camera_frames) {
 
-  for (int i=0; i<5; i++) {
-    std::vector<cv::Point3f> answer_row;
-    for (int j=0; j<5; j++) {
-      std::vector<triangulation_bundle> to_triangulate;
-      for (int k=0; k<all_detected.size(); k++) {
-        to_triangulate.push_back(triangulation_bundle(camera_frames[k],all_detected[k][i][j]));
+  std::vector<std::vector<std::pair<TwoDPoint, cv::Point2f> > > all_detected;
+  std::unordered_map<TwoDPoint, cv::Point3f> answer;
+  std::unordered_map<TwoDPoint, std::vector<triangulation_bundle> > bundles;
+   
+  for (int i=0; i<camera_frames.size(); i++) {
+    std::unordered_map<TwoDPoint, cv::Point2f> frame_detect = 
+      detect(grid_description, camera_frames[i].image);
+    // std::cerr << "Detected in frame " << i << "\n";
+    for (auto fm : frame_detect) {
+      if (bundles.find(fm.first) == bundles.end()) {
+        // New 2D point
+        // std::cerr << "New point case\n";
+        std::vector<triangulation_bundle> bundle;
+        bundle.push_back(triangulation_bundle(camera_frames[i],fm.second));
+        bundles[fm.first] = bundle;
+      } else {
+        // std::cerr << "Old point case\n";
+        // std::cerr << fm.first.x << "\t" << fm.first.y << "\t" << bundles[fm.first].size() << "\t" << fm.second <<"\n";
+        triangulation_bundle temp(camera_frames[i], fm.second);
+        // std::cerr << "Made temp\n";
+        bundles[fm.first].push_back(temp);
+        // std::cerr << "Did not crash\n";
       }
-      answer_row.push_back(Triangulate(to_triangulate));
+    }  
+  }
+
+  std::cerr << "Done with detections\n";
+
+  for (auto bd: bundles) {
+    if (bd.second.size()>1) {
+      answer[bd.first] = Triangulate(bd.second);
     }
-    answer.push_back(answer_row);
   }
   return answer;
 }

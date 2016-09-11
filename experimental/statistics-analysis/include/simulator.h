@@ -7,6 +7,8 @@
 
 void getImage(cv::Mat &image);
 
+void display(void);
+
 void simulate_images(grid_params grid_description,
   motion_type motion,
   float angle,

@@ -1,6 +1,7 @@
 #include "simulator.h"
 
 camera_frame present_frame;
+grid_params grid_description;
 
 void getImage(cv::Mat &image) {
   cv::Mat img(720, 1280, CV_8UC3);
@@ -38,13 +39,15 @@ void display(void) {
       0,1,0);
   }
 
-  for (int i=0; i<5; i++) {
-    for (int j=0; j<5; j++) {
+  for (int i=0; i<grid_description.gridx; i++) {
+    for (int j=0; j<grid_description.gridy; j++) {
       glPushMatrix();
-      glColor3f(getColorR(i,j),
-         getColorG(i, j), 
-         getColorB(i, j));
-      glTranslatef(-200 + 100*i, -200 + 100*j, 0);
+      glColor3f(getColorR(i,j, grid_description),
+         getColorG(i, j, grid_description), 
+         getColorB(i, j, grid_description));
+      glTranslatef(100*(i - grid_description.gridx/2),
+                   100*(j - grid_description.gridy/2), 
+                   0);
       glutSolidSphere(10, 31, 10);
       glPopMatrix();      
     }
@@ -54,7 +57,7 @@ void display(void) {
   glutPostRedisplay();
 }
 
-void simulate_images(grid_params grid_description,
+void simulate_images(grid_params grid_description_input,
   motion_type motion,
   float angle,
   int num_images,
@@ -71,6 +74,7 @@ void simulate_images(grid_params grid_description,
   glutDisplayFunc(display);
   glEnable(GL_DEPTH_TEST);
 
+  grid_description = grid_description_input;
   present_frame.position = starting_point; 
   present_frame.rotation = angle;
   present_frame.intrinsics = intrinsics;

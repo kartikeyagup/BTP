@@ -18,14 +18,14 @@ void UpdatePosition(camera_frame &frame,
   frame.position.z += dz*distance;
 }
 
-float getColorR(int i, int j) {
-  return 0.1 + i*0.18;
+float getColorR(int i, int j, grid_params &grid_description) {
+  return (1.0*grid_description.p2c[TwoDPoint(i, j)].R)/255.0;
 }
 
-float getColorG(int i, int j) {
-  return 1 - j*0.18;
+float getColorG(int i, int j, grid_params &grid_description) {
+  return (1.0*grid_description.p2c[TwoDPoint(i, j)].G)/255.0;
 }
 
-float getColorB(int i, int j) {
-  return 0.5 + (i+j)*0.05;
+float getColorB(int i, int j, grid_params &grid_description) {
+  return (1.0*grid_description.p2c[TwoDPoint(i, j)].B)/255.0;
 }

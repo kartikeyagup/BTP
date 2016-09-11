@@ -3,13 +3,16 @@
 
 #include "common.h"
 
-std::vector<std::vector<cv::Point3f> > detect_triangulate(
+std::unordered_map<TwoDPoint, cv::Point3f> detect_triangulate(
+  grid_params &grid_description,
   std::vector<camera_frame> camera_frames);
 
 void ConvertPoint(triangulation_bundle &bundle);
 
 cv::Point3f Triangulate(std::vector<triangulation_bundle> &input);
 
-std::vector<std::vector<cv::Point2f> > detect(cv::Mat &image);
+std::unordered_map<TwoDPoint, cv::Point2f> detect(
+  grid_params &grid_description,
+  cv::Mat &image);
 
 #endif
