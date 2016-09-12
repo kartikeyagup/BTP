@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     
     std::vector<camera_frame> output_frames;
-    grid_params grid_description(30, 5);
+    grid_params grid_description(300, 50);
     // std::cerr << grid_description.c2p[Color(20,0,0)].x << "\t" << grid_description.c2p[Color(20,0,0)].y << "\n";
     // for (auto it : grid_description.c2p) {
     //     std::cerr << it.first << "\t" << it.second <<"\n";

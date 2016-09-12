@@ -183,15 +183,35 @@ struct camera_frame {
   }
 };
 
+struct camera_frame_wo_image {
+  float rotation;
+  cv::Point3f position;
+  camera_params intrinsics;
+
+  camera_frame_wo_image() { };
+
+  camera_frame_wo_image(const camera_frame_wo_image &obj) {
+    rotation = obj.rotation;
+    position = obj.position;
+    intrinsics = obj.intrinsics;
+  }
+
+  camera_frame_wo_image(float rot, cv::Point3f pos, camera_params intr) {
+    rotation = rot;
+    position = pos;
+    intrinsics = intr;
+  }
+};
+
 struct triangulation_bundle {
-  camera_frame camera;
+  camera_frame_wo_image camera;
   cv::Point2f pt;
 
   triangulation_bundle() { };
 
   triangulation_bundle(camera_frame cam, 
     cv::Point2f point) {
-    camera = cam;
+    camera = camera_frame_wo_image(cam.rotation, cam.position, cam.intrinsics);
     pt = point;
   }
 };
