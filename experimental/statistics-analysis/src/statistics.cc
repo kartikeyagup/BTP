@@ -1,6 +1,6 @@
 #include "statistics.h"
 
-void dump_disk(std::unordered_map<TwoDPoint, cv::Point3f> inputpoints,
+void dump_disk(std::unordered_map<TwoDPoint, std::pair<cv::Point2f, cv::Point3f> > inputpoints,
   grid_params grid_description,
   motion_type motion,
   float angle,
@@ -20,7 +20,9 @@ void dump_disk(std::unordered_map<TwoDPoint, cv::Point3f> inputpoints,
   std::ofstream gridfile;
   gridfile.open(dump_directory + "/grid.txt");
   for (auto it : inputpoints) {
-    gridfile << it.first.x << "\t" << it.first.y << "\t" << it.second <<"\n";
+    gridfile << it.first.x << "\t" << it.first.y << "\t" 
+             << it.second.first << "\t" 
+             << it.second.second <<"\n";
   }
   gridfile.close();
 

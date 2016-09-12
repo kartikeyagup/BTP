@@ -109,32 +109,26 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
   return answer;
 }
 
-std::unordered_map<TwoDPoint, cv::Point3f> detect_triangulate(
+std::unordered_map<TwoDPoint, std::pair<cv::Point2f, cv::Point3f> > detect_triangulate(
   grid_params &grid_description,
   std::vector<camera_frame> camera_frames) {
 
   std::vector<std::vector<std::pair<TwoDPoint, cv::Point2f> > > all_detected;
-  std::unordered_map<TwoDPoint, cv::Point3f> answer;
+  std::unordered_map<TwoDPoint, std::pair<cv::Point2f, cv::Point3f> > answer;
   std::unordered_map<TwoDPoint, std::vector<triangulation_bundle> > bundles;
    
   for (int i=0; i<camera_frames.size(); i++) {
     std::unordered_map<TwoDPoint, cv::Point2f> frame_detect = 
       detect(grid_description, camera_frames[i].image);
-    // std::cerr << "Detected in frame " << i << "\n";
     for (auto fm : frame_detect) {
       if (bundles.find(fm.first) == bundles.end()) {
         // New 2D point
-        // std::cerr << "New point case\n";
         std::vector<triangulation_bundle> bundle;
         bundle.push_back(triangulation_bundle(camera_frames[i],fm.second));
         bundles[fm.first] = bundle;
       } else {
-        // std::cerr << "Old point case\n";
-        // std::cerr << fm.first.x << "\t" << fm.first.y << "\t" << bundles[fm.first].size() << "\t" << fm.second <<"\n";
         triangulation_bundle temp(camera_frames[i], fm.second);
-        // std::cerr << "Made temp\n";
         bundles[fm.first].push_back(temp);
-        // std::cerr << "Did not crash\n";
       }
     }  
   }
@@ -143,7 +137,7 @@ std::unordered_map<TwoDPoint, cv::Point3f> detect_triangulate(
 
   for (auto bd: bundles) {
     if (bd.second.size()>1) {
-      answer[bd.first] = Triangulate(bd.second);
+      answer[bd.first] = std::make_pair(bd.second[0].pt*bd.second[0].camera.intrinsics.f, Triangulate(bd.second));
     }
   }
   return answer;

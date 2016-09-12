@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-std::unordered_map<TwoDPoint, cv::Point3f> detect_triangulate(
+std::unordered_map<TwoDPoint, std::pair<cv::Point2f, cv::Point3f> > detect_triangulate(
   grid_params &grid_description,
   std::vector<camera_frame> camera_frames);
 
