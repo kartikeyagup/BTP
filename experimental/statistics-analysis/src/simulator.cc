@@ -29,7 +29,7 @@ void display(void) {
     glLoadIdentity();  
   } else {
     glLoadIdentity();
-    gluPerspective(120, 16.0/9.0, 100, 3000);
+    gluPerspective(120, 16.0/9.0, 100, 10000);
     gluLookAt(present_frame.position.x, 
       present_frame.position.y, 
       present_frame.position.z,
