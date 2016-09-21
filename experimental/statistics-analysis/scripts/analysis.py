@@ -12,39 +12,49 @@ class TriangulationData:
     self.info = readinfofile(foldername + "/info.txt")
 
   def get(self, i, j, k):
-    return self.grid[i][j][k]
+    return self.grid[(i,j)][1][k]
 
   def get_param(self,param):
     return self.info[param]
 
-  def get_avg(self, k):
-    ans = 0
-    for i in xrange(5):
-      for j in xrange(5):
-        ans += self.grid[i][j][k]
-    return ans/25.0
+  #Returns list of pairs of 2d point, 3d point, apical angle
+  def get_total_data(self):
+    answer= []
+    for el in self.grid:
+      temp = (self.grid[el][0], self.grid[el][1], self.get_apical_angle(el))
+      answer.append(temp)
+    return answer
 
-  def get_median(self,k):
-    values = []
-    for i in xrange(5):
-      for j in xrange(5):
-        values.append(self.grid[i][j][k])
-    values = np.array(values)
-    return np.median(values)
+  # def get_avg(self, k):
+  #   ans = 0
+  #   for i in xrange(5):
+  #     for j in xrange(5):
+  #       ans += self.grid[i][j][k]
+  #   return ans/25.0
 
-  def get_variance(self,k):
-    mean = self.get_avg(k)
-    ans = 0
-    for i in xrange(5):
-      for j in xrange(5):
-        ans += math.pow(self.grid[i][j][k] - mean,2)
-    ans = ans/25.0 
-    return ans
+  # def get_median(self,k):
+  #   values = []
+  #   for i in xrange(5):
+  #     for j in xrange(5):
+  #       values.append(self.grid[i][j][k])
+  #   values = np.array(values)
+  #   return np.median(values)
 
-  def get_apical_angle(self,i,j):
-    point_x = self.grid[i][j][0]
-    point_y = self.grid[i][j][1]
-    point_z = self.grid[i][j][2]
+  # def get_variance(self,k):
+  #   mean = self.get_avg(k)
+  #   ans = 0
+  #   for i in xrange(5):
+  #     for j in xrange(5):
+  #       ans += math.pow(self.grid[i][j][k] - mean,2)
+  #   ans = ans/25.0 
+  #   return ans
+
+  def get_apical_angle(self,(i,j)):
+    if self.grid.get(i,j) is None:
+      return None
+    point_x = self.grid.get(i, j, 0)
+    point_y = self.grid.get(i, j, 1)
+    point_z = self.grid.get(i, j, 2)
     
     o1_x = self.info["starting_point"][0]
     o1_y = self.info["starting_point"][1]
@@ -77,16 +87,16 @@ class CummulativeData:
     return [x.get(i,j,k) for x in self.all_data]
 
   def get_all_apical_angle(self,i,j):
-    return [x.get_apical_angle(i,j) for x in self.all_data]
+    answer=[]
+    for x in self.all_data:
+      if c.get_apical_angle(i,j) is not None:
+        answer.append(x.get_apical_angle(i,j))
+    return answer
 
-  def make_histograms(self, dim):
-    fig = plt.figure()
-    for i in xrange(5):
-      for j in xrange(5):
-        sp = fig.add_subplot(5,5,5*i +j+1)
-        sp.hist(self.get_all(i,j,dim))
-    fig.show()
-    # x=raw_input()
+  def plot_heatmap(self):
+    buckets = {}
+    for el in self.all_data:
+
 
   ##### k is x or y or z value of the graph and i and j are the coordinates of the points 
   def make_plot(self,i,j,k,param):
@@ -194,14 +204,13 @@ class CummulativeData:
 def readgridfile(filename):
   f = open(filename,'r')
   lines = f.read().split('\n')[:-1]
-  grid = []
+  grid = {}
   for line in lines:
-    gridline = []
-    splitted = line.split(';')
-    for points in splitted[:-1]:
-      points_split = map(float,points[1:-1].split(','))
-      gridline.append(points_split)
-    grid.append(gridline)
+    splitted = line.split('\t')
+    [idx, idy] = map(int, line[:2])
+    p1 = map(float, line[2][1:-1].split(','))
+    p2 = map(float, line[3][1:-1].split(','))
+    grid[(idx,idy)] = [p1, p2]
   return grid
 
 def readinfofile(filename):
@@ -223,9 +232,11 @@ def main():
   # cumdata.make_histograms(0)
   # cumdata.make_plot(0,0,2,"distance")
   # cumdata.plot_avg(2,"distance")
-  cumdata.plot_apical_angle(0,0)
-  cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,1000]})
+  # cumdata.plot_apical_angle(0,0)
+  # cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,1000]})
   # cumdata.plot_cummulative_angle(0,0,{"distance":500,"starting_point":[0,0,1000]})
+  cumdata.plot_heatmap()
+
 
 if __name__ == '__main__':
   main()
