@@ -5,6 +5,8 @@
 #include <iostream>
 
 //Main program
+DEFINE_int32(gridx, 300, "Grid Height");
+DEFINE_int32(gridy, 50, "Grid Width");
 DEFINE_double(distance, 100.0, "Distance  between images");
 DEFINE_int32(num_images, 3, "Number of images");
 DEFINE_double(starting_x, 0, "Starting x point");
@@ -22,7 +24,7 @@ int main(int argc, char **argv) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     
     std::vector<camera_frame> output_frames;
-    grid_params grid_description(300, 50);
+    grid_params grid_description(FLAGS_gridx, FLAGS_gridy);
     camera_params intrinsics(0.57735*360, 640, 360);
     cv::Point3f starting_point(FLAGS_starting_x, 
                                FLAGS_starting_y,
