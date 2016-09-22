@@ -9,5 +9,7 @@ rm -rf slam
 make
 if [ -f slam ]; then 
   cd ..
+  rm -r data
+  mkdir data
   build/slam
 fi
