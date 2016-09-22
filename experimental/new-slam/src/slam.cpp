@@ -10,6 +10,8 @@
 #include <utility>
 #include <unordered_map>
 
+float focal = 1693;
+
 struct corr {
   int frame_1;
   int frame_2;
@@ -64,33 +66,34 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
 
 void ChangeCenterSubtracted(corr &p) {
   for (int i=0; i<p.p1.size(); i++) {
-    p.p1[i].x -= 320;
-    p.p1[i].y -= 240; 
-    p.p2[i].x -= 320;
-    p.p2[i].y -= 240; 
+    p.p1[i].x -= 960;
+    p.p1[i].y -= 540; 
+    p.p2[i].x -= 960;
+    p.p2[i].y -= 540; 
   }
 }
 
 void GetEssentialRT(corr &corres, cv::Mat &essential, cv::Mat &R, cv::Mat &T) {
-  float f = 100;
-  essential = cv::findEssentialMat(corres.p1, corres.p2, f);
-  cv::recoverPose(essential, corres.p1, corres.p2, R, T, f);
+  essential = cv::findEssentialMat(corres.p1, corres.p2, focal);
+  cv::recoverPose(essential, corres.p1, corres.p2, R, T, focal);
 }
 
 int main(int argc, char const *argv[])
 {
   // Open video stream
+  // cv::VideoCapture cap(0);
   cv::VideoCapture cap("vid1.mp4");
   if (!cap.isOpened())
       return 1;
   cv::namedWindow("new", 0);
 
-  std::ofstream corresfile, rdata, tdata, edata, pdata;
-  corresfile.open("data/correspondance.txt");
-  rdata.open("data/rotation.txt");
-  tdata.open("data/translation.txt");
-  edata.open("data/essential.txt");
+  std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal;
+  corresfile.open("data/matches_forRtinlier5point.txt");
+  rdata.open("data/R5point.txt");
+  tdata.open("data/T5point.txt");
+  edata.open("data/E5point.txt");
   pdata.open("data/pairs5point.txt");
+  listfocal.open("data/listsize_focal.txt");
   int frameskip=1;
   int framid = 0;
   int prevframe = 0;
@@ -110,15 +113,18 @@ int main(int argc, char const *argv[])
   cv::Size winSize(15, 15);
   cv::TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10, 0.03);
   std::vector<int> siftids;
+  std::vector<int> fileids;
+  std::unordered_map<int, bool> all_files;
   int siftlatest=0;
   while (true) {
+    cap.read(rawFrame);
+    if (rawFrame.empty()) {
+      break;
+    }
     std::cerr << framid <<"\n";
-    cap >> rawFrame;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
-    if (framid<=30) {
+    if (framid == 0) {
       newFrame.copyTo(oldFrame);
-      rawFrame.copyTo(tempFrame);
-      all_images.push_back(tempFrame);
       cv::goodFeaturesToTrack(oldFrame,
         corners_prev, 
         maxCorners, 
@@ -135,7 +141,7 @@ int main(int argc, char const *argv[])
       }
       siftlatest = siftlatest+corners_prev.size();
       prevframe = framid;
-      // cv::imwrite("data/img_" + std::to_string(framid) + ".jpg", prevframe);
+      cv::imwrite("data/img_" + std::to_string(framid) + ".jpg", prevframe);
       framid++;
       continue;
     }
@@ -162,10 +168,7 @@ int main(int argc, char const *argv[])
         }
       }
       all_corr.push_back(frame_corr);
-      cv::Mat newImg;
-      rawFrame.copyTo(newImg);
-      all_images.push_back(newImg);
-
+      
       newFrame.copyTo(oldFrame);
       std::vector<int> newsiftids;
       corners_prev.clear();
@@ -179,9 +182,9 @@ int main(int argc, char const *argv[])
       assert(siftids.size() == corners_prev.size());
     }
 
-    // cv::imwrite("data/img_"+std::to_string(framid)+".jpg", newFrame);
+    cv::imwrite("data/img_"+std::to_string(framid)+".jpg", rawFrame);
     cv::imshow("new", newFrame);
-    if (cv::waitKey(10) == 27) 
+    if (cv::waitKey(1) == 27) 
       break;
     prevframe = framid;
     framid++;
@@ -210,18 +213,21 @@ int main(int argc, char const *argv[])
       siftlatest = siftlatest+newcorners.size();
     }
   }
+  std::cout << "Starting 1st round of compression\n";
   // Correspondance compression.
-  int corres_skip=5;
+  int corres_skip=20;
   std::vector<corr> compressed_all;
   for (int i=0; i<all_corr.size();) {
     corr compressed = all_corr[i];
     for (int j=1; j<corres_skip && (i+j<all_corr.size()); j++) {
       compressed = CompressCorr(compressed, all_corr[i+j]);
     }
-    std::cout << compressed.frame_1 << "\t" << compressed.frame_2 << "\n";
-    cv::imwrite("data/img_" + std::to_string(i/corres_skip) + ".jpg", all_images[compressed.frame_1]);
-    cv::imwrite("data/img_" + std::to_string(1 + (i/corres_skip)) + ".jpg", all_images[compressed.frame_2]);
-    std::cout << compressed.frame_1 << "\t" << compressed.frame_2 << "\n";
+    if (all_files.find(compressed.frame_1)==all_files.end())
+      fileids.push_back(compressed.frame_1);
+    if (all_files.find(compressed.frame_2)==all_files.end())
+      fileids.push_back(compressed.frame_2);
+    all_files[compressed.frame_1] = true;
+    all_files[compressed.frame_2] = true;
     compressed.frame_1 = i/corres_skip;
     compressed.frame_2 = 1+compressed.frame_1;
         
@@ -229,7 +235,7 @@ int main(int argc, char const *argv[])
     compressed_all.push_back(compressed);
     i=i+corres_skip;
   }
-
+  std::cout << "Done with 1st round of compression\n";
   all_corr = compressed_all;
   
   std::vector<corr> new_compressed;
@@ -242,28 +248,32 @@ int main(int argc, char const *argv[])
     }
   }
   all_corr = new_compressed;
+  std::cout << "Done with 2nd round of compression\n";
 
+  corresfile << all_corr.size() << "\n";
   for (auto it : all_corr) {
-    corresfile << it.frame_1 << "\t" << it.frame_2 << "\t:\t";
+    corresfile << it.frame_1 << " " << it.frame_2 << " " << it.p1.size() << "\n";
     for (int i=0; i< it.p1.size(); i++) {
-      corresfile << it.unique_id[i] << "\t" << it.p1[i] << "\t:\t" << it.p2[i] << ";\t";
+      corresfile << it.unique_id[i] << " " << it.p1[i].x << " " 
+                 << it.p1[i].y << " " << it.unique_id[i] << " " 
+                 << it.p2[i].x << " " << it.p2[i].y << "\n";
     }
     corresfile << "\n";
   }
   for (int i=0; i<all_corr.size(); i++) {
-    pdata << all_corr[i].frame_1 << "\t" << all_corr[i].frame_2 << "\t1.00000\t1.00000\n";
+    pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
     cv::Mat R,T,E;
     GetEssentialRT(all_corr[i], E, R, T);
-    edata << E.at<double>(0,0) << "\t" << E.at<double>(0,1) << "\t" << E.at<double>(0,2) << "\t" <<
-    E.at<double>(1,0) << "\t" << E.at<double>(1,1) << "\t" << E.at<double>(1,2) << "\t" <<
-    E.at<double>(2,0) << "\t" << E.at<double>(2,1) << "\t" << E.at<double>(2,2) << "\n";
-    // edata << E << "\n";
-    tdata << T.at<double>(0) << "\t" << T.at<double>(1) << "\t" << T.at<double>(2) <<"\n";
-    // tdata << T << "\n";
-    rdata << R.at<double>(0,0) << "\t" << R.at<double>(0,1) << "\t" << R.at<double>(0,2) << "\t" <<
-    R.at<double>(1,0) << "\t" << R.at<double>(1,1) << "\t" << R.at<double>(1,2) << "\t" <<
-    R.at<double>(2,0) << "\t" << R.at<double>(2,1) << "\t" << R.at<double>(2,2) << "\n";
-    // rdata << R << "\n";
+    edata << E.at<double>(0,0) << " " << E.at<double>(0,1) << " " << E.at<double>(0,2) << " " <<
+    E.at<double>(1,0) << " " << E.at<double>(1,1) << " " << E.at<double>(1,2) << " " <<
+    E.at<double>(2,0) << " " << E.at<double>(2,1) << " " << E.at<double>(2,2) << "\n";
+    tdata << T.at<double>(0) << " " << T.at<double>(1) << " " << T.at<double>(2) <<"\n";
+    rdata << R.at<double>(0,0) << " " << R.at<double>(0,1) << " " << R.at<double>(0,2) << " " <<
+    R.at<double>(1,0) << " " << R.at<double>(1,1) << " " << R.at<double>(1,2) << " " <<
+    R.at<double>(2,0) << " " << R.at<double>(2,1) << " " << R.at<double>(2,2) << "\n";
+  }
+  for (int i=0; i<fileids.size(); i++) {
+    listfocal << "img_" << fileids[i] << ".jpg" << " 0 " << focal << "\n";
   }
 
   corresfile.close();
@@ -271,6 +281,6 @@ int main(int argc, char const *argv[])
   tdata.close();
   pdata.close();
   edata.close();
-  // essential matrix and decomposition
+  listfocal.close();
   return 0;
 }
