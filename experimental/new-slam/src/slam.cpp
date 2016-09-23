@@ -53,8 +53,15 @@ corr CompressCorr(corr &init, corr &final) {
 
 void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
   std::vector<cv::Point2f> &inversetracking, 
-  std::vector<uchar> &status) {
+  std::vector<uchar> &status,
+  std::vector<uchar> &statusinv) {
   for (int i=0; i<prevtracking.size(); i++)  {
+    if (status[i]==0) {
+      continue;
+    }
+    if (statusinv[i] == 0) {
+      status[i] = 0;
+    }
     status[i]=0;
     cv::Point2f temmpPoint = inversetracking[i]-prevtracking[i];
     float magnitude = (temmpPoint.x)*(temmpPoint.x) + (temmpPoint.y)*(temmpPoint.y);
@@ -66,10 +73,10 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
 
 void ChangeCenterSubtracted(corr &p) {
   for (int i=0; i<p.p1.size(); i++) {
-    p.p1[i].x -= 960;
-    p.p1[i].y -= 540; 
-    p.p2[i].x -= 960;
-    p.p2[i].y -= 540; 
+    p.p1[i].x -= 640;
+    p.p1[i].y -= 360; 
+    p.p2[i].x -= 640;
+    p.p2[i].y -= 360; 
   }
 }
 
@@ -87,13 +94,14 @@ int main(int argc, char const *argv[])
       return 1;
   cv::namedWindow("new", 0);
 
-  std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal;
+  std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
   corresfile.open("data/matches_forRtinlier5point.txt");
   rdata.open("data/R5point.txt");
   tdata.open("data/T5point.txt");
   edata.open("data/E5point.txt");
-  pdata.open("data/pairs5point.txt");
-  listfocal.open("data/listsize_focal.txt");
+  pdata.open("data/original_pairs5point.txt");
+  listfocal.open("data/listsize_focal1.txt");
+  list_focal.open("data/list_focal.txt"); 
   int frameskip=1;
   int framid = 0;
   int prevframe = 0;
@@ -141,7 +149,7 @@ int main(int argc, char const *argv[])
       }
       siftlatest = siftlatest+corners_prev.size();
       prevframe = framid;
-      cv::imwrite("data/img_" + std::to_string(framid) + ".jpg", prevframe);
+      cv::imwrite("data/img_" + std::to_string(framid) + ".jpg", rawFrame);
       framid++;
       continue;
     }
@@ -156,12 +164,19 @@ int main(int argc, char const *argv[])
         corners, corners_inverse, status_inverse,
         err, winSize, 2, termcrit, 0, 0.001);
       
-      GetGoodPoints(corners_prev,corners_inverse,status);
+      GetGoodPoints(corners_prev,corners_inverse,status,status_inverse);
 
       // Store Good Tracks;
       corr frame_corr(prevframe, framid);
       for (int i=0; i<corners.size(); i++) {
         if (status[i]) {
+          if (corners[i].x > 1279 || corners[i].y > 719)
+          {
+            status[i] = 0;
+            continue;
+          }
+          assert(corners[i].x < 1280);
+          assert(corners[i].y < 720);
           frame_corr.p1.push_back(corners_prev[i]);
           frame_corr.p2.push_back(corners[i]);
           frame_corr.unique_id.push_back(siftids[i]);
@@ -183,7 +198,10 @@ int main(int argc, char const *argv[])
     }
 
     cv::imwrite("data/img_"+std::to_string(framid)+".jpg", rawFrame);
-    cv::imshow("new", newFrame);
+    for (int i=0; i<corners_prev.size(); i++) {
+      cv::circle(rawFrame, corners_prev[i], 4, cv::Scalar(0), -1);
+    }
+    cv::imshow("new", rawFrame);
     if (cv::waitKey(1) == 27) 
       break;
     prevframe = framid;
@@ -258,7 +276,6 @@ int main(int argc, char const *argv[])
                  << it.p1[i].y << " " << it.unique_id[i] << " " 
                  << it.p2[i].x << " " << it.p2[i].y << "\n";
     }
-    corresfile << "\n";
   }
   for (int i=0; i<all_corr.size(); i++) {
     pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
@@ -274,6 +291,7 @@ int main(int argc, char const *argv[])
   }
   for (int i=0; i<fileids.size(); i++) {
     listfocal << "img_" << fileids[i] << ".jpg" << " 0 " << focal << "\n";
+    list_focal << "img_" << fileids[i] << ".jpg " << focal << "\n";
   }
 
   corresfile.close();
