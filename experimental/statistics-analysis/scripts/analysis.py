@@ -137,6 +137,8 @@ class CummulativeData:
     epical_angle_list = self.get_all_apical_angle(i,j)
     # distance_list = [x.]
     plt.plot(epical_angle_list,depth_list, "o")
+    plt.ylabel("Depth")
+    plt.xlabel("Apical Angle")
     # print depth_list 
     # print epical_angle_list
     plt.show()
@@ -226,7 +228,7 @@ def main():
 
   # cumdata.plot_avg(2,"distance")
   cumdata.plot_apical_angle(0,0)
-  cumdata.plot_cummulative_distance(0,0,{"angle":15,"starting_point":[0,0,1000]})
+  cumdata.plot_cummulative_distance(0,0,{"angle":0,"starting_point":[0,0,1000]})
   # cumdata.plot_cummulative_angle(0,0,{"distance":500,"starting_point":[0,0,1000]})
   # print cumdata.all_data_dirs
   # file1 = TriangulationData("tempdir")
