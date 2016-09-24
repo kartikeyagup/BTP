@@ -1,5 +1,5 @@
 #include <iostream>
-#include "opencv2/core/core.hpp"
+#include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
@@ -9,6 +9,23 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include <stdio.h>
+#include <stdlib.h>
+#include "verify_two_view_matches.h"
+#include "feature_correspondence.h"
+#include "camera_intrinsics_prior.h"
+#include "estimate_twoview_info.h"
+#include "twoview_info.h"
+#include <glog/logging.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#include <sstream>
+#include <iomanip>
+#include <assert.h>
+#include <limits.h>
+#include <algorithm>  
+#include <omp.h>
 
 float focal = 1693;
 
@@ -85,6 +102,37 @@ void GetEssentialRT(corr &corres, cv::Mat &essential, cv::Mat &R, cv::Mat &T) {
   cv::recoverPose(essential, corres.p1, corres.p2, R, T, focal);
 }
 
+bool VerifyTwoViewMatches(
+  const VerifyTwoViewMatchesOptions& options,
+  const CameraIntrinsicsPrior& intrinsics1,
+  const CameraIntrinsicsPrior& intrinsics2,
+  const std::vector<FeatureCorrespondence>& correspondences,
+  TwoViewInfo* twoview_info,
+  std::vector<int>* inlier_indices) {
+  if (correspondences.size() < options.min_num_inlier_matches) {
+    return false;
+  }
+
+  // Estimate the two view info. If we fail to estimate a two view info then do
+  // not add this view pair to the verified matches.
+  if (!EstimateTwoViewInfo(options.estimate_twoview_info_options,
+    intrinsics1,
+    intrinsics2,
+    correspondences,
+    twoview_info,
+    inlier_indices)) {
+    return false;
+  }
+
+  // If there were not enough inliers, return false and do not bother to
+  // (potentially) run bundle adjustment.
+  if (inlier_indices->size() < options.min_num_inlier_matches) {
+    return false;
+  }
+  return true;
+}
+
+
 int main(int argc, char const *argv[])
 {
   // Open video stream
@@ -124,6 +172,13 @@ int main(int argc, char const *argv[])
   std::vector<int> fileids;
   std::unordered_map<int, bool> all_files;
   int siftlatest=0;
+  VerifyTwoViewMatchesOptions options;
+  
+  options.bundle_adjustment = false;
+  options.min_num_inlier_matches = 10;
+  options.estimate_twoview_info_options.max_sampson_error_pixels = 2.25;
+
+
   while (true) {
     cap.read(rawFrame);
     if (rawFrame.empty()) {
