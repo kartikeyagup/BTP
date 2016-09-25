@@ -57,7 +57,8 @@ add_executable(main scripts/main.cpp)
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
                            glog
-                           ${CERES_LIBRARIES})
+                           ${CERES_LIBRARIES}
+                           helpers-cc)
 
 target_link_libraries(main ${OpenCV_LIBS}
                            gflags

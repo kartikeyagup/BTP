@@ -27,7 +27,11 @@
 #include <algorithm>  
 #include <omp.h>
 
-float focal = 1693;
+
+VerifyTwoViewMatchesOptions options;
+float focal = 950;
+int cx = 640;
+int cy = 360;
 
 struct corr {
   int frame_1;
@@ -90,16 +94,53 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
 
 void ChangeCenterSubtracted(corr &p) {
   for (int i=0; i<p.p1.size(); i++) {
-    p.p1[i].x -= 640;
-    p.p1[i].y -= 360; 
-    p.p2[i].x -= 640;
-    p.p2[i].y -= 360; 
+    p.p1[i].x -= cx;
+    p.p1[i].y -= cy; 
+    p.p2[i].x -= cx;
+    p.p2[i].y -= cy; 
   }
 }
 
-void GetEssentialRT(corr &corres, cv::Mat &essential, cv::Mat &R, cv::Mat &T) {
-  essential = cv::findEssentialMat(corres.p1, corres.p2, focal);
-  cv::recoverPose(essential, corres.p1, corres.p2, R, T, focal);
+bool GetEssentialRT(corr &corres, TwoViewInfo &twoview_info, std::vector<int> &inlier_indices) {
+  CameraIntrinsicsPrior intrinsics1, intrinsics2;
+  intrinsics1.focal_length.value = focal;
+  intrinsics1.focal_length.is_set = true;
+  intrinsics1.principal_point[0].is_set = true;
+  intrinsics1.principal_point[0].value = 0.0;
+  intrinsics1.principal_point[1].is_set = true;
+  intrinsics1.principal_point[1].value = 0.0;
+  intrinsics1.aspect_ratio.is_set = true;
+  intrinsics1.aspect_ratio.value = 1.0;
+  intrinsics1.skew.is_set = true;
+  intrinsics1.skew.value = 0.0;
+  
+  intrinsics2.focal_length.value = focal;
+  intrinsics2.focal_length.is_set = true;
+  intrinsics2.principal_point[0].is_set = true;
+  intrinsics2.principal_point[0].value = 0.0;
+  intrinsics2.principal_point[1].is_set = true;
+  intrinsics2.principal_point[1].value = 0.0;
+  intrinsics2.aspect_ratio.is_set = true;
+  intrinsics2.aspect_ratio.value = 1.0;
+  intrinsics2.skew.is_set = true;
+  intrinsics2.skew.value = 0.0;
+
+  std::vector<FeatureCorrespondence> correspondences;
+  for (int i=0; i<corres.p1.size(); i++) {
+    FeatureCorrespondence tmp;
+    tmp.feature1.x() = corres.p1[i].x;
+    tmp.feature1.y() = corres.p1[i].y;
+    tmp.feature2.x() = corres.p2[i].x;
+    tmp.feature2.y() = corres.p2[i].y;
+    correspondences.push_back(tmp);
+  }
+  bool ret = VerifyTwoViewMatches(options, 
+      intrinsics1,
+      intrinsics2, 
+      correspondences, 
+      &twoview_info, 
+      &inlier_indices);
+  return ret;
 }
 
 bool VerifyTwoViewMatches(
@@ -132,24 +173,27 @@ bool VerifyTwoViewMatches(
   return true;
 }
 
-
 int main(int argc, char const *argv[])
 {
   // Open video stream
   // cv::VideoCapture cap(0);
-  cv::VideoCapture cap("vid1.mp4");
+  cv::VideoCapture cap("vid3.MP4");
   if (!cap.isOpened())
       return 1;
   cv::namedWindow("new", 0);
 
   std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
-  corresfile.open("data/matches_forRtinlier5point.txt");
-  rdata.open("data/R5point.txt");
-  tdata.open("data/T5point.txt");
-  edata.open("data/E5point.txt");
-  pdata.open("data/original_pairs5point.txt");
-  listfocal.open("data/listsize_focal1.txt");
-  list_focal.open("data/list_focal.txt"); 
+  // corresfile.open("data/matches_forRtinlier5point.txt");
+  rdata.open("data2/R5point.txt");
+  tdata.open("data2/T5point.txt");
+  edata.open("data2/E5point.txt");
+  pdata.open("data2/original_pairs5point.txt");
+  listfocal.open("data2/listsize_focal1.txt");
+  list_focal.open("data2/list_focal.txt");
+  FILE *fp = fopen("data2/matches_forRtinlier5point.txt", "w");
+  fprintf(fp, "                                  \n");
+  
+  int numoutmatches = 0; 
   int frameskip=1;
   int framid = 0;
   int prevframe = 0;
@@ -172,7 +216,6 @@ int main(int argc, char const *argv[])
   std::vector<int> fileids;
   std::unordered_map<int, bool> all_files;
   int siftlatest=0;
-  VerifyTwoViewMatchesOptions options;
   
   options.bundle_adjustment = false;
   options.min_num_inlier_matches = 10;
@@ -204,7 +247,7 @@ int main(int argc, char const *argv[])
       }
       siftlatest = siftlatest+corners_prev.size();
       prevframe = framid;
-      cv::imwrite("data/img_" + std::to_string(framid) + ".jpg", rawFrame);
+      cv::imwrite("data2/img_" + std::to_string(framid) + ".jpg", rawFrame);
       framid++;
       continue;
     }
@@ -225,13 +268,15 @@ int main(int argc, char const *argv[])
       corr frame_corr(prevframe, framid);
       for (int i=0; i<corners.size(); i++) {
         if (status[i]) {
-          if (corners[i].x > 1279 || corners[i].y > 719)
+          if ((corners[i].x > (2*cx -1)) || (corners[i].y > (2*cy -1)) || (corners[i].x <0) || (corners[i].y<0))
           {
             status[i] = 0;
             continue;
           }
-          assert(corners[i].x < 1280);
-          assert(corners[i].y < 720);
+          assert(corners[i].x < 2*cx);
+          assert(corners[i].y < 2*cy);
+          assert(corners[i].x >= 0);
+          assert(corners[i].y >= 0);
           frame_corr.p1.push_back(corners_prev[i]);
           frame_corr.p2.push_back(corners[i]);
           frame_corr.unique_id.push_back(siftids[i]);
@@ -252,7 +297,7 @@ int main(int argc, char const *argv[])
       assert(siftids.size() == corners_prev.size());
     }
 
-    cv::imwrite("data/img_"+std::to_string(framid)+".jpg", rawFrame);
+    cv::imwrite("data2/img_"+std::to_string(framid)+".jpg", rawFrame);
     for (int i=0; i<corners_prev.size(); i++) {
       cv::circle(rawFrame, corners_prev[i], 4, cv::Scalar(0), -1);
     }
@@ -315,7 +360,7 @@ int main(int argc, char const *argv[])
   for (int i=0; i<all_corr.size(); i++) {
     corr compressed = all_corr[i];
     new_compressed.push_back(compressed);
-    for (int j=1; j<5 && (i+j < all_corr.size()); j++) {
+    for (int j=1; j<10 && (i+j < all_corr.size()); j++) {
       compressed = CompressCorr(compressed, all_corr[i+j]);
       new_compressed.push_back(compressed);
     }
@@ -323,37 +368,49 @@ int main(int argc, char const *argv[])
   all_corr = new_compressed;
   std::cout << "Done with 2nd round of compression\n";
 
-  corresfile << all_corr.size() << "\n";
-  for (auto it : all_corr) {
-    corresfile << it.frame_1 << " " << it.frame_2 << " " << it.p1.size() << "\n";
-    for (int i=0; i< it.p1.size(); i++) {
-      corresfile << it.unique_id[i] << " " << it.p1[i].x << " " 
-                 << it.p1[i].y << " " << it.unique_id[i] << " " 
-                 << it.p2[i].x << " " << it.p2[i].y << "\n";
-    }
-  }
   for (int i=0; i<all_corr.size(); i++) {
-    pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
-    cv::Mat R,T,E;
-    GetEssentialRT(all_corr[i], E, R, T);
-    edata << E.at<double>(0,0) << " " << E.at<double>(0,1) << " " << E.at<double>(0,2) << " " <<
-    E.at<double>(1,0) << " " << E.at<double>(1,1) << " " << E.at<double>(1,2) << " " <<
-    E.at<double>(2,0) << " " << E.at<double>(2,1) << " " << E.at<double>(2,2) << "\n";
-    tdata << T.at<double>(0) << " " << T.at<double>(1) << " " << T.at<double>(2) <<"\n";
-    rdata << R.at<double>(0,0) << " " << R.at<double>(0,1) << " " << R.at<double>(0,2) << " " <<
-    R.at<double>(1,0) << " " << R.at<double>(1,1) << " " << R.at<double>(1,2) << " " <<
-    R.at<double>(2,0) << " " << R.at<double>(2,1) << " " << R.at<double>(2,2) << "\n";
+    std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
+    TwoViewInfo twoview_info;
+    std::vector<int> inliers;
+    if (GetEssentialRT(all_corr[i], twoview_info, inliers)) {
+      numoutmatches++;
+      rdata << twoview_info.rotationmat_2(0,0) << " " << twoview_info.rotationmat_2(0,1) << " " << twoview_info.rotationmat_2(0,2) << " " <<
+               twoview_info.rotationmat_2(1,0) << " " << twoview_info.rotationmat_2(1,1) << " " << twoview_info.rotationmat_2(1,2) << " " <<
+               twoview_info.rotationmat_2(2,0) << " " << twoview_info.rotationmat_2(2,1) << " " << twoview_info.rotationmat_2(2,2) << "\n";
+      tdata << twoview_info.translation_2(0) << " " << twoview_info.translation_2(1) << " " << twoview_info.translation_2(2) <<"\n";
+      edata << twoview_info.essential_mat(0,0) << " " << twoview_info.essential_mat(0,1) << " " << twoview_info.essential_mat(0,2) << " " <<
+               twoview_info.essential_mat(1,0) << " " << twoview_info.essential_mat(1,1) << " " << twoview_info.essential_mat(1,2) << " " <<
+               twoview_info.essential_mat(2,0) << " " << twoview_info.essential_mat(2,1) << " " << twoview_info.essential_mat(2,2) << "\n";
+      pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
+      fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1, all_corr[i].frame_2, inliers.size());
+      for (int j = 0; j<inliers.size(); j++)
+      {
+        int loc = inliers[j];
+        fprintf(fp, "%d %f %f %d %f %f\n", 
+            all_corr[i].unique_id[loc],
+            all_corr[i].p1[loc].x, 
+            all_corr[i].p1[loc].y, 
+            all_corr[i].unique_id[loc],
+            all_corr[i].p2[loc].x, 
+            all_corr[i].p2[loc].y);
+      }
+    } else {
+      std::cerr << "Something bad still happened!!!!!!!!!!\n";
+    }
   }
   for (int i=0; i<fileids.size(); i++) {
     listfocal << "img_" << fileids[i] << ".jpg" << " 0 " << focal << "\n";
     list_focal << "img_" << fileids[i] << ".jpg " << focal << "\n";
   }
-
+  fseek(fp, 0, SEEK_SET);
+  fprintf(fp, "%d", numoutmatches);
+  fclose(fp);
   corresfile.close();
   rdata.close();
   tdata.close();
   pdata.close();
   edata.close();
   listfocal.close();
+  list_focal.close();
   return 0;
 }
