@@ -3,8 +3,8 @@ import itertools
 import threading
 
 def main():
-  num_threads=4
-  distances = [i for i in xrange(500,600,1)]
+  num_threads=8
+  distances = [i for i in xrange(1,1000,5)]
   angles = [i for i in xrange(15,16,1)]
   starting_points_z = [i for i in xrange(1000,1100,100)]
   num_images=[2]
