@@ -48,7 +48,8 @@ add_library(helpers-cc src/triangulation.cc
                        src/estimate_twoview_info.cc
                        src/estimate_relative_pose.cpp
                        src/essential_matrix_utils.cc
-                       src/eight_point_fundamental_matrix.cc)
+                       src/eight_point_fundamental_matrix.cc
+                       src/correspondance.cc)
 
 add_executable(slam scripts/slam.cpp)
 

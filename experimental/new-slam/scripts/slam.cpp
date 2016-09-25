@@ -10,98 +10,21 @@
 #include <utility>
 #include <unordered_map>
 #include <stdio.h>
-#include <stdlib.h>
+#include "correspondance.h"
 #include "verify_two_view_matches.h"
 #include "feature_correspondence.h"
 #include "camera_intrinsics_prior.h"
 #include "estimate_twoview_info.h"
 #include "twoview_info.h"
-#include <glog/logging.h>
-#include <string.h>
-#include <math.h>
-#include <time.h>
-#include <sstream>
-#include <iomanip>
-#include <assert.h>
-#include <limits.h>
-#include <algorithm>  
-#include <omp.h>
 
-
-VerifyTwoViewMatchesOptions options;
-float focal = 950;
+float focal = 1690;
 int cx = 640;
 int cy = 360;
 
-struct corr {
-  int frame_1;
-  int frame_2;
-  std::vector<int> unique_id;
-  std::vector<cv::Point2f> p1;
-  std::vector<cv::Point2f> p2; 
-
-  corr() {};
-
-  corr(int f1, int f2) {
-    frame_1 = f1;
-    frame_2 = f2;
-  }
-
-  corr(const corr& other) {
-    frame_1 = other.frame_1;
-    frame_2 = other.frame_2;
-    unique_id = other.unique_id;
-    p1 = other.p1;
-    p2 = other.p2;
-  }
-};
-
-corr CompressCorr(corr &init, corr &final) {
-  assert(init.frame_2 == final.frame_1);
-  corr compressed(init.frame_1, final.frame_2);
-  int finalcorr=0;
-  int limitfinal = final.p1.size();
-  for (int i=0; (i<init.p1.size()) && (finalcorr<limitfinal); i++) {
-    if (init.p2[i]==final.p1[finalcorr]) {
-      compressed.unique_id.push_back(init.unique_id[i]);
-      compressed.p1.push_back(init.p1[i]);
-      compressed.p2.push_back(final.p2[finalcorr]);
-      finalcorr++;
-    }
-  }
-  return compressed;
-}
-
-void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
-  std::vector<cv::Point2f> &inversetracking, 
-  std::vector<uchar> &status,
-  std::vector<uchar> &statusinv) {
-  for (int i=0; i<prevtracking.size(); i++)  {
-    if (status[i]==0) {
-      continue;
-    }
-    if (statusinv[i] == 0) {
-      status[i] = 0;
-    }
-    status[i]=0;
-    cv::Point2f temmpPoint = inversetracking[i]-prevtracking[i];
-    float magnitude = (temmpPoint.x)*(temmpPoint.x) + (temmpPoint.y)*(temmpPoint.y);
-    if (magnitude<=5.0) {
-      status[i]=1;
-    }
-  }
-}
-
-void ChangeCenterSubtracted(corr &p) {
-  for (int i=0; i<p.p1.size(); i++) {
-    p.p1[i].x -= cx;
-    p.p1[i].y -= cy; 
-    p.p2[i].x -= cx;
-    p.p2[i].y -= cy; 
-  }
-}
-
-bool GetEssentialRT(corr &corres, TwoViewInfo &twoview_info, std::vector<int> &inlier_indices) {
+bool GetEssentialRT(corr &corres, 
+  TwoViewInfo &twoview_info, 
+  std::vector<int> &inlier_indices, 
+  VerifyTwoViewMatchesOptions& options) {
   CameraIntrinsicsPrior intrinsics1, intrinsics2;
   intrinsics1.focal_length.value = focal;
   intrinsics1.focal_length.is_set = true;
@@ -134,13 +57,12 @@ bool GetEssentialRT(corr &corres, TwoViewInfo &twoview_info, std::vector<int> &i
     tmp.feature2.y() = corres.p2[i].y;
     correspondences.push_back(tmp);
   }
-  bool ret = VerifyTwoViewMatches(options, 
+  return VerifyTwoViewMatches(options, 
       intrinsics1,
       intrinsics2, 
       correspondences, 
       &twoview_info, 
       &inlier_indices);
-  return ret;
 }
 
 bool VerifyTwoViewMatches(
@@ -183,7 +105,6 @@ int main(int argc, char const *argv[])
   cv::namedWindow("new", 0);
 
   std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
-  // corresfile.open("data/matches_forRtinlier5point.txt");
   rdata.open("data2/R5point.txt");
   tdata.open("data2/T5point.txt");
   edata.open("data2/E5point.txt");
@@ -217,6 +138,7 @@ int main(int argc, char const *argv[])
   std::unordered_map<int, bool> all_files;
   int siftlatest=0;
   
+  VerifyTwoViewMatchesOptions options;
   options.bundle_adjustment = false;
   options.min_num_inlier_matches = 10;
   options.estimate_twoview_info_options.max_sampson_error_pixels = 2.25;
@@ -282,6 +204,7 @@ int main(int argc, char const *argv[])
           frame_corr.unique_id.push_back(siftids[i]);
         }
       }
+      CalculateDelta(frame_corr);
       all_corr.push_back(frame_corr);
       
       newFrame.copyTo(oldFrame);
@@ -333,25 +256,28 @@ int main(int argc, char const *argv[])
   }
   std::cout << "Starting 1st round of compression\n";
   // Correspondance compression.
-  int corres_skip=20;
+  int corres_skip=100;
   std::vector<corr> compressed_all;
+  int fid = 0;
   for (int i=0; i<all_corr.size();) {
     corr compressed = all_corr[i];
-    for (int j=1; j<corres_skip && (i+j<all_corr.size()); j++) {
+    std::cerr << "Init delta at " << compressed.frame_1 << "\t" << compressed.delta << "\n";
+    for (int j=1; j<corres_skip && (i+j<all_corr.size()) && WithinRange(compressed); j++) {
       compressed = CompressCorr(compressed, all_corr[i+j]);
     }
+    std::cerr << "Final delta at " << compressed.frame_2 << "\t" << compressed.delta << "\n";
+    i=compressed.frame_2;
     if (all_files.find(compressed.frame_1)==all_files.end())
       fileids.push_back(compressed.frame_1);
     if (all_files.find(compressed.frame_2)==all_files.end())
       fileids.push_back(compressed.frame_2);
     all_files[compressed.frame_1] = true;
     all_files[compressed.frame_2] = true;
-    compressed.frame_1 = i/corres_skip;
-    compressed.frame_2 = 1+compressed.frame_1;
-        
-    ChangeCenterSubtracted(compressed);
+    compressed.frame_1 = fid;
+    compressed.frame_2 = fid+1;
+    fid++;        
+    ChangeCenterSubtracted(compressed, cx, cy);
     compressed_all.push_back(compressed);
-    i=i+corres_skip;
   }
   std::cout << "Done with 1st round of compression\n";
   all_corr = compressed_all;
@@ -360,7 +286,7 @@ int main(int argc, char const *argv[])
   for (int i=0; i<all_corr.size(); i++) {
     corr compressed = all_corr[i];
     new_compressed.push_back(compressed);
-    for (int j=1; j<10 && (i+j < all_corr.size()); j++) {
+    for (int j=1; j<5 && (i+j < all_corr.size()); j++) {
       compressed = CompressCorr(compressed, all_corr[i+j]);
       new_compressed.push_back(compressed);
     }
@@ -372,7 +298,7 @@ int main(int argc, char const *argv[])
     std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
     TwoViewInfo twoview_info;
     std::vector<int> inliers;
-    if (GetEssentialRT(all_corr[i], twoview_info, inliers)) {
+    if (GetEssentialRT(all_corr[i], twoview_info, inliers, options)) {
       numoutmatches++;
       rdata << twoview_info.rotationmat_2(0,0) << " " << twoview_info.rotationmat_2(0,1) << " " << twoview_info.rotationmat_2(0,2) << " " <<
                twoview_info.rotationmat_2(1,0) << " " << twoview_info.rotationmat_2(1,1) << " " << twoview_info.rotationmat_2(1,2) << " " <<
