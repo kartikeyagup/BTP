@@ -20,11 +20,9 @@
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
 
-
 float focal = 1690;
 int cx = 640;
 int cy = 360;
-
 
 bool GetEssentialRT(corr &corres, 
   TwoViewInfo &twoview_info, 
@@ -113,18 +111,8 @@ int main(int argc, char **argv)
   if (!cap.isOpened())
       return 1;
   cv::namedWindow("new", 0);
-
-  std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
-  rdata.open(FLAGS_dirname + "/R5point.txt");
-  tdata.open(FLAGS_dirname + "/T5point.txt");
-  edata.open(FLAGS_dirname + "/E5point.txt");
-  pdata.open(FLAGS_dirname + "/original_pairs5point.txt");
-  listfocal.open(FLAGS_dirname + "/listsize_focal1.txt");
-  list_focal.open(FLAGS_dirname + "/list_focal.txt");
-  FILE *fp = fopen((FLAGS_dirname + "/matches_forRtinlier5point.txt").c_str(), "w");
-  fprintf(fp, "                                  \n");
   
-  int numoutmatches = 0; 
+  int numoutmatches; 
   int frameskip=1;
   int framid = 0;
   int prevframe = 0;
@@ -144,8 +132,8 @@ int main(int argc, char **argv)
   cv::Size winSize(15, 15);
   cv::TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10, 0.03);
   std::vector<int> siftids;
-  std::vector<int> fileids;
-  std::unordered_map<int, bool> all_files;
+  std::vector<std::vector<int> > fileids;
+  std::vector<std::unordered_map<int, bool> > all_files;
   int siftlatest=0;
   
   VerifyTwoViewMatchesOptions options;
@@ -264,12 +252,20 @@ int main(int argc, char **argv)
       siftlatest = siftlatest+newcorners.size();
     }
   }
+
   std::cout << "Starting 1st round of compression\n";
   // Correspondance compression.
   int corres_skip=30;
+  std::vector<std::vector<corr> > Chunks;
+  int chunksize = 20;
   std::vector<corr> compressed_all;
   int fid = 0;
   for (int i=0; i<all_corr.size();) {
+    if (fid%chunksize==0) {
+      Chunks.push_back(std::vector<corr> ());
+      all_files.push_back(std::unordered_map<int, bool> ());
+      fileids.push_back(std::vector<int> ());
+    }
     corr compressed = all_corr[i];
     std::cerr << "Init delta at " << compressed.frame_1 << "\t" << compressed.delta << "\n";
     for (int j=1; j<corres_skip && (i+j<all_corr.size()) && WithinRange(compressed); j++) {
@@ -277,76 +273,90 @@ int main(int argc, char **argv)
     }
     std::cerr << "Final delta at " << compressed.frame_2 << "\t" << compressed.delta << "\n";
     i=compressed.frame_2;
-    if (all_files.find(compressed.frame_1)==all_files.end())
-      fileids.push_back(compressed.frame_1);
-    if (all_files.find(compressed.frame_2)==all_files.end())
-      fileids.push_back(compressed.frame_2);
-    all_files[compressed.frame_1] = true;
-    all_files[compressed.frame_2] = true;
+    if (all_files[Chunks.size()-1].find(compressed.frame_1)==all_files[Chunks.size()-1].end())
+      fileids[Chunks.size()-1].push_back(compressed.frame_1);
+    if (all_files[Chunks.size()-1].find(compressed.frame_2)==all_files[Chunks.size()-1].end())
+      fileids[Chunks.size()-1].push_back(compressed.frame_2);
+    all_files[Chunks.size()-1][compressed.frame_1] = true;
+    all_files[Chunks.size()-1][compressed.frame_2] = true;
     compressed.frame_1 = fid;
     compressed.frame_2 = fid+1;
     fid++;        
     ChangeCenterSubtracted(compressed, cx, cy);
-    compressed_all.push_back(compressed);
+    Chunks[Chunks.size()-1].push_back(compressed);
   }
   std::cout << "Done with 1st round of compression\n";
-  all_corr = compressed_all;
-  
-  std::vector<corr> new_compressed;
-  for (int i=0; i<all_corr.size(); i++) {
-    corr compressed = all_corr[i];
-    new_compressed.push_back(compressed);
-    for (int j=1; j<5 && (i+j < all_corr.size()); j++) {
-      compressed = CompressCorr(compressed, all_corr[i+j]);
-      new_compressed.push_back(compressed);
-    }
-  }
-  all_corr = new_compressed;
-  std::cout << "Done with 2nd round of compression\n";
 
-  for (int i=0; i<all_corr.size(); i++) {
-    std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
-    TwoViewInfo twoview_info;
-    std::vector<int> inliers;
-    if (GetEssentialRT(all_corr[i], twoview_info, inliers, options)) {
-      numoutmatches++;
-      rdata << twoview_info.rotationmat_2(0,0) << " " << twoview_info.rotationmat_2(0,1) << " " << twoview_info.rotationmat_2(0,2) << " " <<
-               twoview_info.rotationmat_2(1,0) << " " << twoview_info.rotationmat_2(1,1) << " " << twoview_info.rotationmat_2(1,2) << " " <<
-               twoview_info.rotationmat_2(2,0) << " " << twoview_info.rotationmat_2(2,1) << " " << twoview_info.rotationmat_2(2,2) << "\n";
-      tdata << twoview_info.translation_2(0) << " " << twoview_info.translation_2(1) << " " << twoview_info.translation_2(2) <<"\n";
-      edata << twoview_info.essential_mat(0,0) << " " << twoview_info.essential_mat(0,1) << " " << twoview_info.essential_mat(0,2) << " " <<
-               twoview_info.essential_mat(1,0) << " " << twoview_info.essential_mat(1,1) << " " << twoview_info.essential_mat(1,2) << " " <<
-               twoview_info.essential_mat(2,0) << " " << twoview_info.essential_mat(2,1) << " " << twoview_info.essential_mat(2,2) << "\n";
-      pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
-      fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1, all_corr[i].frame_2, inliers.size());
-      for (int j = 0; j<inliers.size(); j++)
-      {
-        int loc = inliers[j];
-        fprintf(fp, "%d %f %f %d %f %f\n", 
-            all_corr[i].unique_id[loc],
-            all_corr[i].p1[loc].x, 
-            all_corr[i].p1[loc].y, 
-            all_corr[i].unique_id[loc],
-            all_corr[i].p2[loc].x, 
-            all_corr[i].p2[loc].y);
+  for (int ch=0; ch<Chunks.size(); ch++) {
+  
+    all_corr = Chunks[ch];
+  
+    std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
+    rdata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_R5point.txt");
+    tdata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_T5point.txt");
+    edata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_E5point.txt");
+    pdata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_original_pairs5point.txt");
+    listfocal.open(FLAGS_dirname + "/" + std::to_string(ch) + "_listsize_focal1.txt");
+    list_focal.open(FLAGS_dirname + "/" + std::to_string(ch) + "_list_focal.txt");
+    FILE *fp = fopen((FLAGS_dirname + "/" + std::to_string(ch) + "_matches_forRtinlier5point.txt").c_str(), "w");
+    fprintf(fp, "                                  \n");
+
+    std::vector<corr> new_compressed;
+    for (int i=0; i<all_corr.size(); i++) {
+      corr compressed = all_corr[i];
+      new_compressed.push_back(compressed);
+      for (int j=1; j<5 && (i+j < all_corr.size()); j++) {
+        compressed = CompressCorr(compressed, all_corr[i+j]);
+        new_compressed.push_back(compressed);
       }
-    } else {
-      std::cerr << "Something bad still happened!!!!!!!!!!\n";
     }
+    all_corr = new_compressed;
+    std::cout << "Done with 2nd round of compression\n";
+    numoutmatches = 0;
+    for (int i=0; i<all_corr.size(); i++) {
+      std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
+      TwoViewInfo twoview_info;
+      std::vector<int> inliers;
+      if (GetEssentialRT(all_corr[i], twoview_info, inliers, options)) {
+        numoutmatches++;
+        rdata << twoview_info.rotationmat_2(0,0) << " " << twoview_info.rotationmat_2(0,1) << " " << twoview_info.rotationmat_2(0,2) << " " <<
+                 twoview_info.rotationmat_2(1,0) << " " << twoview_info.rotationmat_2(1,1) << " " << twoview_info.rotationmat_2(1,2) << " " <<
+                 twoview_info.rotationmat_2(2,0) << " " << twoview_info.rotationmat_2(2,1) << " " << twoview_info.rotationmat_2(2,2) << "\n";
+        tdata << twoview_info.translation_2(0) << " " << twoview_info.translation_2(1) << " " << twoview_info.translation_2(2) <<"\n";
+        edata << twoview_info.essential_mat(0,0) << " " << twoview_info.essential_mat(0,1) << " " << twoview_info.essential_mat(0,2) << " " <<
+                 twoview_info.essential_mat(1,0) << " " << twoview_info.essential_mat(1,1) << " " << twoview_info.essential_mat(1,2) << " " <<
+                 twoview_info.essential_mat(2,0) << " " << twoview_info.essential_mat(2,1) << " " << twoview_info.essential_mat(2,2) << "\n";
+        pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
+        fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1, all_corr[i].frame_2, inliers.size());
+        for (int j = 0; j<inliers.size(); j++)
+        {
+          int loc = inliers[j];
+          fprintf(fp, "%d %f %f %d %f %f\n", 
+              all_corr[i].unique_id[loc],
+              all_corr[i].p1[loc].x, 
+              all_corr[i].p1[loc].y, 
+              all_corr[i].unique_id[loc],
+              all_corr[i].p2[loc].x, 
+              all_corr[i].p2[loc].y);
+        }
+      } else {
+        std::cerr << "Something bad still happened!!!!!!!!!!\n";
+      }
+    }
+    for (int i=0; i<fileids[ch].size(); i++) {
+      listfocal << "img_" << fileids[ch][i] << ".jpg" << " 0 " << focal << "\n";
+      list_focal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
+    }
+    fseek(fp, 0, SEEK_SET);
+    fprintf(fp, "%d", numoutmatches);
+    fclose(fp);
+    corresfile.close();
+    rdata.close();
+    tdata.close();
+    pdata.close();
+    edata.close();
+    listfocal.close();
+    list_focal.close();
   }
-  for (int i=0; i<fileids.size(); i++) {
-    listfocal << "img_" << fileids[i] << ".jpg" << " 0 " << focal << "\n";
-    list_focal << "img_" << fileids[i] << ".jpg " << focal << "\n";
-  }
-  fseek(fp, 0, SEEK_SET);
-  fprintf(fp, "%d", numoutmatches);
-  fclose(fp);
-  corresfile.close();
-  rdata.close();
-  tdata.close();
-  pdata.close();
-  edata.close();
-  listfocal.close();
-  list_focal.close();
   return 0;
 }
