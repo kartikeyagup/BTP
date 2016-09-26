@@ -27,6 +27,7 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
     }
     if (statusinv[i] == 0) {
       status[i] = 0;
+      continue;
     }
     status[i]=0;
     cv::Point2f temmpPoint = inversetracking[i]-prevtracking[i];
@@ -60,5 +61,5 @@ void CalculateDelta(corr &c) {
 
 bool WithinRange(corr &c) {
   float val = c.delta.dot(c.delta);
-  return (val < 1000);
+  return (val < 500);
 }

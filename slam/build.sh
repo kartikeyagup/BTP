@@ -9,7 +9,7 @@ rm -rf slam
 make
 if [ -f slam ]; then 
   cd ..
-  rm -r data2
-  mkdir data2
-  build/slam
+  rm -rf $2
+  mkdir $2
+  build/slam -dirname=$2 -video=$1
 fi

@@ -17,9 +17,14 @@
 #include "estimate_twoview_info.h"
 #include "twoview_info.h"
 
+DEFINE_string(dirname, "data2", "Directory to dump in");
+DEFINE_string(video, "vid3.MP4", "Name of the video");
+
+
 float focal = 1690;
 int cx = 640;
 int cy = 360;
+
 
 bool GetEssentialRT(corr &corres, 
   TwoViewInfo &twoview_info, 
@@ -95,23 +100,28 @@ bool VerifyTwoViewMatches(
   return true;
 }
 
-int main(int argc, char const *argv[])
+int main(int argc, char **argv)
 {
   // Open video stream
   // cv::VideoCapture cap(0);
-  cv::VideoCapture cap("vid3.MP4");
+
+  gflags::SetUsageMessage("slam --help");
+  gflags::SetVersionString("1.0.0");
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  
+  cv::VideoCapture cap(FLAGS_video);
   if (!cap.isOpened())
       return 1;
   cv::namedWindow("new", 0);
 
   std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
-  rdata.open("data2/R5point.txt");
-  tdata.open("data2/T5point.txt");
-  edata.open("data2/E5point.txt");
-  pdata.open("data2/original_pairs5point.txt");
-  listfocal.open("data2/listsize_focal1.txt");
-  list_focal.open("data2/list_focal.txt");
-  FILE *fp = fopen("data2/matches_forRtinlier5point.txt", "w");
+  rdata.open(FLAGS_dirname + "/R5point.txt");
+  tdata.open(FLAGS_dirname + "/T5point.txt");
+  edata.open(FLAGS_dirname + "/E5point.txt");
+  pdata.open(FLAGS_dirname + "/original_pairs5point.txt");
+  listfocal.open(FLAGS_dirname + "/listsize_focal1.txt");
+  list_focal.open(FLAGS_dirname + "/list_focal.txt");
+  FILE *fp = fopen((FLAGS_dirname + "/matches_forRtinlier5point.txt").c_str(), "w");
   fprintf(fp, "                                  \n");
   
   int numoutmatches = 0; 
@@ -169,7 +179,7 @@ int main(int argc, char const *argv[])
       }
       siftlatest = siftlatest+corners_prev.size();
       prevframe = framid;
-      cv::imwrite("data2/img_" + std::to_string(framid) + ".jpg", rawFrame);
+      cv::imwrite(FLAGS_dirname + "/img_" + std::to_string(framid) + ".jpg", rawFrame);
       framid++;
       continue;
     }
@@ -220,7 +230,7 @@ int main(int argc, char const *argv[])
       assert(siftids.size() == corners_prev.size());
     }
 
-    cv::imwrite("data2/img_"+std::to_string(framid)+".jpg", rawFrame);
+    cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
     for (int i=0; i<corners_prev.size(); i++) {
       cv::circle(rawFrame, corners_prev[i], 4, cv::Scalar(0), -1);
     }
@@ -256,7 +266,7 @@ int main(int argc, char const *argv[])
   }
   std::cout << "Starting 1st round of compression\n";
   // Correspondance compression.
-  int corres_skip=100;
+  int corres_skip=30;
   std::vector<corr> compressed_all;
   int fid = 0;
   for (int i=0; i<all_corr.size();) {
