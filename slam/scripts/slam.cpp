@@ -10,6 +10,7 @@
 #include <utility>
 #include <unordered_map>
 #include <stdio.h>
+#include <stdlib.h>
 #include "correspondance.h"
 #include "verify_two_view_matches.h"
 #include "feature_correspondence.h"
@@ -19,6 +20,8 @@
 
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
+DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
+DEFINE_int32(chunks, 20, "Max number of keyframes in a chunk");
 
 float focal = 1690;
 int cx = 640;
@@ -255,9 +258,9 @@ int main(int argc, char **argv)
 
   std::cout << "Starting 1st round of compression\n";
   // Correspondance compression.
-  int corres_skip=30;
+  int corres_skip= FLAGS_keyframe;
   std::vector<std::vector<corr> > Chunks;
-  int chunksize = 20;
+  int chunksize = FLAGS_chunks;
   std::vector<corr> compressed_all;
   int fid = 0;
   for (int i=0; i<all_corr.size();) {
@@ -286,19 +289,23 @@ int main(int argc, char **argv)
     Chunks[Chunks.size()-1].push_back(compressed);
   }
   std::cout << "Done with 1st round of compression\n";
+  std::ofstream listfocalglobal, inifile;
+  listfocalglobal.open(FLAGS_dirname + "/list_focal.txt");
+  inifile.open(FLAGS_dirname + "/clusternames.ini");
 
   for (int ch=0; ch<Chunks.size(); ch++) {
   
     all_corr = Chunks[ch];
   
+    system(("mkdir " + FLAGS_dirname + "/batch_" + std::to_string(ch)).c_str());
     std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
-    rdata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_R5point.txt");
-    tdata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_T5point.txt");
-    edata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_E5point.txt");
-    pdata.open(FLAGS_dirname + "/" + std::to_string(ch) + "_original_pairs5point.txt");
-    listfocal.open(FLAGS_dirname + "/" + std::to_string(ch) + "_listsize_focal1.txt");
-    list_focal.open(FLAGS_dirname + "/" + std::to_string(ch) + "_list_focal.txt");
-    FILE *fp = fopen((FLAGS_dirname + "/" + std::to_string(ch) + "_matches_forRtinlier5point.txt").c_str(), "w");
+    rdata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/R5point.txt");
+    tdata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/T5point.txt");
+    edata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/E5point.txt");
+    pdata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/original_pairs5point.txt");
+    listfocal.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/listsize_focal1.txt");
+    list_focal.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/list_focal.txt");
+    FILE *fp = fopen((FLAGS_dirname + "/batch_" + std::to_string(ch) + "/matches_forRtinlier5point.txt").c_str(), "w");
     fprintf(fp, "                                  \n");
 
     std::vector<corr> new_compressed;
@@ -326,8 +333,8 @@ int main(int argc, char **argv)
         edata << twoview_info.essential_mat(0,0) << " " << twoview_info.essential_mat(0,1) << " " << twoview_info.essential_mat(0,2) << " " <<
                  twoview_info.essential_mat(1,0) << " " << twoview_info.essential_mat(1,1) << " " << twoview_info.essential_mat(1,2) << " " <<
                  twoview_info.essential_mat(2,0) << " " << twoview_info.essential_mat(2,1) << " " << twoview_info.essential_mat(2,2) << "\n";
-        pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
-        fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1, all_corr[i].frame_2, inliers.size());
+        pdata << all_corr[i].frame_1 +1 - chunksize*ch << " " << all_corr[i].frame_2 +1 - chunksize*ch << " 1.00000 1.00000\n";
+        fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1 - chunksize*ch , all_corr[i].frame_2 - chunksize*ch , inliers.size());
         for (int j = 0; j<inliers.size(); j++)
         {
           int loc = inliers[j];
@@ -347,6 +354,10 @@ int main(int argc, char **argv)
       listfocal << "img_" << fileids[ch][i] << ".jpg" << " 0 " << focal << "\n";
       list_focal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
     }
+    for (int i=0; i<fileids[ch].size() -1; i++) {
+      listfocalglobal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
+    }
+    inifile << "batch_" << ch << "\n";
     fseek(fp, 0, SEEK_SET);
     fprintf(fp, "%d", numoutmatches);
     fclose(fp);
@@ -358,5 +369,7 @@ int main(int argc, char **argv)
     listfocal.close();
     list_focal.close();
   }
+  listfocalglobal.close();
+  inifile.close();
   return 0;
 }
