@@ -58,6 +58,8 @@ add_executable(slam scripts/slam.cpp)
 
 add_executable(main scripts/main.cpp)
 
+add_executable(test1 src/place_side.cpp)
+
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
                            glog
@@ -70,3 +72,4 @@ target_link_libraries(main ${OpenCV_LIBS}
                            ${CERES_LIBRARIES}
                            helpers-cc)
 
+target_link_libraries(test1 ${OpenCV_LIBS})
