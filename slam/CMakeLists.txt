@@ -58,7 +58,7 @@ add_executable(slam scripts/slam.cpp)
 
 add_executable(main scripts/main.cpp)
 
-add_executable(test1 src/place_side.cpp)
+add_executable(test1 scripts/place_side.cpp)
 
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
