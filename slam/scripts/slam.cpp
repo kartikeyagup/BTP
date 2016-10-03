@@ -21,10 +21,10 @@
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
 DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 20, "Max number of keyframes in a chunk");
+DEFINE_int32(chunks, 80, "Max number of keyframes in a chunk");
 DEFINE_bool(corres, false, "Dump image correspondances");
 
-float focal = 1690;
+float focal = 991;
 int cx = 640;
 int cy = 360;
 
@@ -125,15 +125,30 @@ void ShowCorres(std::string FLAGS_dirname, corr compressed) {
   }
 }
 
+void undistort(cv::Mat &img) {
+  cv::Mat temp = img.clone();
+  cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+  cameraMatrix.at<double>(0, 0) = 1134;
+  cameraMatrix.at<double>(0, 1) = 0;
+  cameraMatrix.at<double>(0, 2) = 645;
+  cameraMatrix.at<double>(1, 0) = 0;
+  cameraMatrix.at<double>(1, 1) = 1126;
+  cameraMatrix.at<double>(1, 2) = 364;
+  cameraMatrix.at<double>(2, 0) = 0;
+  cameraMatrix.at<double>(2, 1) = 0;
+  cameraMatrix.at<double>(2, 2) = 1;
+  std::vector<float> distCoeffs = {-0.29344778, 0.17523322, 0.00032134, -0.00088967, -0.08528005};
+  cv::undistort(temp, img, cameraMatrix, distCoeffs);    
+}
 
 int main(int argc, char **argv)
 {
   // Open video stream
   // cv::VideoCapture cap(0);
 
-  gflags::SetUsageMessage("slam --help");
-  gflags::SetVersionString("1.0.0");
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  google::SetUsageMessage("slam --help");
+  google::SetVersionString("1.0.0");
+  google::ParseCommandLineFlags(&argc, &argv, true);
   
   cv::VideoCapture cap(FLAGS_video);
   if (!cap.isOpened())
@@ -175,6 +190,7 @@ int main(int argc, char **argv)
     if (rawFrame.empty()) {
       break;
     }
+    undistort(rawFrame);
     std::cerr << framid <<"\n";
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
