@@ -25,11 +25,11 @@ find_package(OpenCV REQUIRED)
 #########################################################
 # FIND GFLAGS
 #########################################################
-find_package(gflags REQUIRED)
+# find_package(gflags REQUIRED)
 #########################################################
 # FIND GLOG
 #########################################################
-find_package(glog REQUIRED)
+# find_package(glog REQUIRED)
 #########################################################
 # FIND CERES
 #########################################################
@@ -58,7 +58,9 @@ add_executable(slam scripts/slam.cpp)
 
 add_executable(main scripts/main.cpp)
 
-add_executable(test1 scripts/place_side.cpp)
+add_executable(place_side scripts/place_side.cpp)
+
+add_executable(epipolar scripts/epipolar_verification.cpp)
 
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
@@ -72,4 +74,7 @@ target_link_libraries(main ${OpenCV_LIBS}
                            ${CERES_LIBRARIES}
                            helpers-cc)
 
-target_link_libraries(test1 ${OpenCV_LIBS})
+target_link_libraries(place_side ${OpenCV_LIBS})
+
+target_link_libraries(epipolar ${OpenCV_LIBS}
+                                gflags)
