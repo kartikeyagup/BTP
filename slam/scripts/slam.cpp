@@ -415,6 +415,7 @@ int main(int argc, char **argv)
     listfocal.close();
     list_focal.close();
   }
+  listfocalglobal << "img_" << *((*fileids.rbegin()).rbegin()) << ".jpg " << focal << "\n";
   listfocalglobal.close();
   inifile.close();
   return 0;
