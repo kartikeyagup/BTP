@@ -54,6 +54,8 @@ add_library(helpers-cc src/triangulation.cc
                        src/eight_point_fundamental_matrix.cc
                        src/correspondance.cc)
 
+add_library(sift-cc src/sift_processing.cc)
+
 add_executable(slam scripts/slam.cpp)
 
 add_executable(main scripts/main.cpp)
