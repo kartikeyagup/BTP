@@ -431,7 +431,7 @@ void corresGenerate(int numImage,vector<int>&mapping, char*filename)
 	// pPairwiseKeyPointMatches = new vector<pair<int,int>> * [nPairwiseMatches];
 	vector<string>listA;
 	for(int i = 0; i <numImage; i++)
-		keyPointTable[i].resize(140000);
+		keyPointTable[i].resize(300000);
 	
 	int curPairIndex=0;
 	int num_p = 0;
