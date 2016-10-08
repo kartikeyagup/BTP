@@ -41,7 +41,7 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
       removed++;
     }
   }
-  std::cout << "Removed " << removed << " points from " << tot << " points\n";
+  // std::cout << "Removed " << removed << " points from " << tot << " points\n";
   assert (removed < tot);
 }
 

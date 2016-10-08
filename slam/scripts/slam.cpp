@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 #include <unordered_map>
+#include <unordered_set>
 #include <stdio.h>
 #include <stdlib.h>
 #include "correspondance.h"
@@ -315,11 +316,11 @@ int main(int argc, char **argv)
       fileids.push_back(std::vector<int> ());
     }
     corr compressed = all_corr[i];
-    std::cerr << "Init delta at " << compressed.frame_1 << "\t" << compressed.delta << "\n";
+    // std::cerr << "Init delta at " << compressed.frame_1 << "\t" << compressed.delta << "\n";
     for (int j=1; j<corres_skip && (i+j<all_corr.size()) && WithinRange(compressed); j++) {
       compressed = CompressCorr(compressed, all_corr[i+j]);
     }
-    std::cerr << "Final delta at " << compressed.frame_2 << "\t" << compressed.delta << "\n";
+    // std::cerr << "Final delta at " << compressed.frame_2 << "\t" << compressed.delta << "\n";
     i=compressed.frame_2;
 
     if (FLAGS_corres) {
@@ -348,13 +349,14 @@ int main(int argc, char **argv)
     all_corr = Chunks[ch];
   
     system(("mkdir " + FLAGS_dirname + "/batch_" + std::to_string(ch)).c_str());
-    std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal;
+    std::ofstream corresfile, rdata, tdata, edata, pdata, listfocal, list_focal, num_cors;
     rdata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/R5point.txt");
     tdata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/T5point.txt");
     edata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/E5point.txt");
     pdata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/original_pairs5point.txt");
     listfocal.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/listsize_focal1.txt");
     list_focal.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/list_focal.txt");
+    num_cors.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/num_cors.txt");
     FILE *fp = fopen((FLAGS_dirname + "/batch_" + std::to_string(ch) + "/matches_forRtinlier5point.txt").c_str(), "w");
     fprintf(fp, "                                  \n");
 
@@ -367,11 +369,13 @@ int main(int argc, char **argv)
         new_compressed.push_back(compressed);
       }
     }
+    std::unordered_map<int, int> sift_count;
+    std::unordered_map<int, std::unordered_set<int> > sift_frames;
     all_corr = new_compressed;
     std::cout << "Done with 2nd round of compression\n";
     numoutmatches = 0;
     for (int i=0; i<all_corr.size(); i++) {
-      std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
+      // std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
       TwoViewInfo twoview_info;
       std::vector<int> inliers;
       if (GetEssentialRT(all_corr[i], twoview_info, inliers, options)) {
@@ -385,9 +389,19 @@ int main(int argc, char **argv)
                  twoview_info.essential_mat(2,0) << " " << twoview_info.essential_mat(2,1) << " " << twoview_info.essential_mat(2,2) << "\n";
         pdata << all_corr[i].frame_1 +1 - chunksize*ch << " " << all_corr[i].frame_2 +1 - chunksize*ch << " 1.00000 1.00000\n";
         fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1 - chunksize*ch , all_corr[i].frame_2 - chunksize*ch , inliers.size());
-        for (int j = 0; j<inliers.size(); j++)
-        {
+        for (int j = 0; j<inliers.size(); j++) {
           int loc = inliers[j];
+          int sftid = all_corr[i].unique_id[loc];
+          int f1 = all_corr[i].frame_1;
+          int f2 = all_corr[i].frame_2;
+          if (sift_frames[sftid].find(f1) == sift_frames[sftid].end()) {
+            sift_frames[sftid].insert(f1);
+            sift_count[all_corr[i].unique_id[loc]]++;
+          }
+          if (sift_frames[sftid].find(f2) == sift_frames[sftid].end()) {
+            sift_frames[sftid].insert(f2);
+            sift_count[all_corr[i].unique_id[loc]]++;
+          }
           fprintf(fp, "%d %f %f %d %f %f\n", 
               all_corr[i].unique_id[loc],
               all_corr[i].p1[loc].x, 
@@ -407,6 +421,19 @@ int main(int argc, char **argv)
     for (int i=0; i<fileids[ch].size() -1; i++) {
       listfocalglobal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
     }
+    int total_size = 0;
+    int count = 0;
+    int bestsftid=0;
+    int bestcount = 0;
+    std::vector<int> counts;
+    for (auto it: sift_count) {
+      counts.push_back(it.second);
+      count += it.second;
+      total_size++;
+    }
+    std::nth_element(counts.begin(), counts.begin() + total_size/2, counts.end());
+    std::cout << "Mean: " << count/total_size << " Median: " << counts[total_size/2] << "\n";
+    num_cors << counts[total_size/2] << "\n";
     inifile << "batch_" << ch << "\n";
     fseek(fp, 0, SEEK_SET);
     fprintf(fp, "%d", numoutmatches);
@@ -418,6 +445,7 @@ int main(int argc, char **argv)
     edata.close();
     listfocal.close();
     list_focal.close();
+    num_cors.close();
   }
   listfocalglobal << "img_" << *((*fileids.rbegin()).rbegin()) << ".jpg " << focal << "\n";
   listfocalglobal.close();
