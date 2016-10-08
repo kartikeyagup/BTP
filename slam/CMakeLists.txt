@@ -52,7 +52,8 @@ add_library(helpers-cc src/triangulation.cc
                        src/estimate_relative_pose.cpp
                        src/essential_matrix_utils.cc
                        src/eight_point_fundamental_matrix.cc
-                       src/correspondance.cc)
+                       src/correspondance.cc
+                       src/helpers.cc)
 
 add_library(sift-cc src/sift_processing.cc)
 

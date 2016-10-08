@@ -1,17 +1,12 @@
-// #include <cv.h>
-// #include <highgui.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <iostream>
-// using namespace cv;
 
 int main(int argc, char **argv)
 {
-    // cv::Mat im1 = cv::imread(argv[1]);
-    // cv::Mat im2 = cv::imread(argv[2]);
     cv::Mat im1(500,300,CV_8UC1);
     cv::Mat im2(500,300,CV_8UC1);
     im1 = cv::Scalar(10);
