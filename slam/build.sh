@@ -19,6 +19,7 @@ if [ "$#" -ne 0 ]; then
       if [ -d $3 ]; then
         rm -rf $3
         mkdir $3
+        echo "Starting processing"
         build/slam -dirname=$3 -video=$2
       fi
     fi

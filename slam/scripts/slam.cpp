@@ -21,10 +21,12 @@
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
 DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 80, "Max number of keyframes in a chunk");
+DEFINE_int32(chunks, 100, "Max number of keyframes in a chunk");
+DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
+DEFINE_bool(undistort, false, "Undistort the images");
 
-float focal = 991;
+float focal = 1134;
 int cx = 640;
 int cy = 360;
 
@@ -190,7 +192,9 @@ int main(int argc, char **argv)
     if (rawFrame.empty()) {
       break;
     }
-    undistort(rawFrame);
+    if (FLAGS_undistort) {
+      undistort(rawFrame);
+    }
     std::cerr << framid <<"\n";
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
@@ -358,7 +362,7 @@ int main(int argc, char **argv)
     for (int i=0; i<all_corr.size(); i++) {
       corr compressed = all_corr[i];
       new_compressed.push_back(compressed);
-      for (int j=1; j<5 && (i+j < all_corr.size()); j++) {
+      for (int j=1; j<FLAGS_overlap && (i+j < all_corr.size()); j++) {
         compressed = CompressCorr(compressed, all_corr[i+j]);
         new_compressed.push_back(compressed);
       }

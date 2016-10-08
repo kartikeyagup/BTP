@@ -21,6 +21,9 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
   std::vector<cv::Point2f> &inversetracking, 
   std::vector<uchar> &status,
   std::vector<uchar> &statusinv) {
+  int tot, removed;
+  tot = prevtracking.size();
+  removed=0;
   for (int i=0; i<prevtracking.size(); i++)  {
     if (status[i]==0) {
       continue;
@@ -32,10 +35,14 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
     status[i]=0;
     cv::Point2f temmpPoint = inversetracking[i]-prevtracking[i];
     float magnitude = (temmpPoint.x)*(temmpPoint.x) + (temmpPoint.y)*(temmpPoint.y);
-    if (magnitude<=5.0) {
+    if (magnitude<=0.01) {
       status[i]=1;
+    } else {
+      removed++;
     }
   }
+  std::cout << "Removed " << removed << " points from " << tot << " points\n";
+  assert (removed < tot);
 }
 
 void ChangeCenterSubtracted(corr &p, int cx, int cy) {
