@@ -7,8 +7,10 @@ cd build
 cmake ..
 if [ $1 = "slam" ]; then 
   rm -rf slam 
-else
+elif [ $1 = "epipolar" ]; then
   rm -rf epipolar
+else 
+  rm -rf dense
 fi
 make -j4
 
@@ -27,6 +29,11 @@ if [ "$#" -ne 0 ]; then
     if [ -f  epipolar ]; then
       cd ..
       build/epipolar
+    fi
+  elif [ $1 = "dense" ]; then
+    if [ -f dense ]; then
+      cd ..
+      build/dense -nvm_file="btp/outputVSFM_GB.nvm" -output_file="btp/newVSFM_GB.nvm" -output_ply="btp/newoutput.ply"
     fi
   else 
     echo "Invalid usage"

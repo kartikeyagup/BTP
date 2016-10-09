@@ -65,6 +65,8 @@ add_executable(place_side scripts/place_side.cpp)
 
 add_executable(epipolar scripts/epipolar_verification.cpp)
 
+add_executable(dense scripts/densify.cpp)
+
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
                            glog
@@ -81,3 +83,6 @@ target_link_libraries(place_side ${OpenCV_LIBS})
 
 target_link_libraries(epipolar ${OpenCV_LIBS}
                                 gflags)
+
+target_link_libraries(dense ${OpenCV_LIBS}
+                            gflags)
