@@ -10,8 +10,8 @@
 struct keyframe_data {
   std::string filename;
   double focal;
-  Eigen::Matrix3d rotation;
-  Eigen::Vector3d translation;
+  Eigen::Matrix3f rotation;
+  Eigen::Vector3f translation;
   double d1;
   double d2;
 };
@@ -19,13 +19,19 @@ struct keyframe_data {
 struct imgcorr {
   int imgid;
   int siftid;
-  cv::Point2d img_location;
+  cv::Point2f img_location;
 };
 
 struct Corr3D {
-  cv::Point3d point_3d;
+  cv::Point3f point_3d;
   cv::Point3i color;
   std::vector<imgcorr> corr;
+
+  Corr3D();
+  Corr3D(cv::Point3f p, cv::Point3i c) {
+    point_3d = p;
+    color = c; 
+  }
 };
 
 struct nvm_file {

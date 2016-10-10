@@ -55,6 +55,8 @@ add_library(helpers-cc src/triangulation.cc
                        src/correspondance.cc
                        src/helpers.cc)
 
+add_library (dense-helpers-cc src/triangulate.cc)
+
 add_library(sift-cc src/sift_processing.cc)
 
 add_executable(slam scripts/slam.cpp)
@@ -85,4 +87,5 @@ target_link_libraries(epipolar ${OpenCV_LIBS}
                                 gflags)
 
 target_link_libraries(dense ${OpenCV_LIBS}
-                            gflags)
+                            gflags
+                            dense-helpers-cc)
