@@ -27,7 +27,7 @@ struct Corr3D {
   cv::Point3i color;
   std::vector<imgcorr> corr;
 
-  Corr3D();
+  Corr3D() { };
   Corr3D(cv::Point3f p, cv::Point3i c) {
     point_3d = p;
     color = c; 

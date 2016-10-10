@@ -5,6 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include "nvmhelpers.h"
 #include "triangulate.h"
+#include "densehelpers.h"
 
 DEFINE_string(nvm_file, "data2/outputVSFM_GB.nvm", "Path to nvm file");
 DEFINE_string(data_dir, "data2", "Path to directory containing images");
@@ -49,8 +50,8 @@ int main(int argc, char **argv)
       to_triangulate.push_back(triangulation_bundle(camera_frame_wo_images[i], pt));
       cv::Point2f location; 
       for (int j=i+1; j<i + FLAGS_windows; j++) {
-        if (findPoint(pt, i, j, all_images[i], input, all_images[j], location)) {
-          to_triangulate.push_back(triangulation_bundle(camera_frame_wo_images[j] ,location))
+        if (findPoint(pt, all_images[i], all_images[j], camera_frame_wo_images[i], camera_frame_wo_images[j], location)) {
+          to_triangulate.push_back(triangulation_bundle(camera_frame_wo_images[j], location));
         }
       }
       // Triangulate

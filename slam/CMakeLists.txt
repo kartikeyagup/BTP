@@ -55,7 +55,8 @@ add_library(helpers-cc src/triangulation.cc
                        src/correspondance.cc
                        src/helpers.cc)
 
-add_library (dense-helpers-cc src/triangulate.cc)
+add_library (dense-helpers-cc src/triangulate.cc
+                              src/densehelpers.cc)
 
 add_library(sift-cc src/sift_processing.cc)
 

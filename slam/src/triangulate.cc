@@ -19,36 +19,25 @@ cv::Point3f Triangulate(std::vector<triangulation_bundle> &input) {
     rotation[8] = input[i].camera.rotation(2,2);
   
     float *translation = new float[3];
-    // translation[0] = rotation[0]*input[i].camera.position.x + 
-    //   rotation[1]*input[i].camera.position.y +
-    //   rotation[2]*input[i].camera.position.z;
-    // translation[1] = rotation[3]*input[i].camera.position.x + 
-    //   rotation[4]*input[i].camera.position.y +
-    //   rotation[5]*input[i].camera.position.z;
-    // translation[2] = rotation[6]*input[i].camera.position.x + 
-    //   rotation[7]*input[i].camera.position.y +
-    //   rotation[8]*input[i].camera.position.z;
-    // translation[0] *= -1;
-    // translation[1] *= -1;
-    // translation[2] *= -1;
-    // translation = - RC
-
     translation[0] = input[i].camera.position.x;
     translation[1] = input[i].camera.position.y;
     translation[2] = input[i].camera.position.z;
 
+    float ptx = input[i].pt.x/input[i].camera.intrinsics.f;
+    float pty = input[i].pt.y/input[i].camera.intrinsics.f;
+
     int row = 2*i;
 
-    A.at<float>(row, 0) = rotation[0] - input[i].pt.x*rotation[6];
-    A.at<float>(row, 1) = rotation[1] - input[i].pt.x*rotation[7];
-    A.at<float>(row, 2) = rotation[2] - input[i].pt.x*rotation[8];
+    A.at<float>(row, 0) = rotation[0] - ptx*rotation[6];
+    A.at<float>(row, 1) = rotation[1] - ptx*rotation[7];
+    A.at<float>(row, 2) = rotation[2] - ptx*rotation[8];
     
-    A.at<float>(row + 1, 0) = rotation[3] - input[i].pt.y*rotation[6];
-    A.at<float>(row + 1, 1) = rotation[4] - input[i].pt.y*rotation[7];
-    A.at<float>(row + 1, 2) = rotation[5] - input[i].pt.y*rotation[8];
+    A.at<float>(row + 1, 0) = rotation[3] - pty*rotation[6];
+    A.at<float>(row + 1, 1) = rotation[4] - pty*rotation[7];
+    A.at<float>(row + 1, 2) = rotation[5] - pty*rotation[8];
     
-    B.at<float>(row + 0, 0) = translation[2]*input[i].pt.x - translation[0];
-    B.at<float>(row + 1, 0) = translation[2]*input[i].pt.y - translation[1];
+    B.at<float>(row + 0, 0) = translation[2]*ptx - translation[0];
+    B.at<float>(row + 1, 0) = translation[2]*pty - translation[1];
     delete translation;
     delete rotation;
   }
