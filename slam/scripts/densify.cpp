@@ -30,7 +30,6 @@ int main(int argc, char **argv)
   all_images.resize(input.kf_data.size());
   all_gray_images.resize(input.kf_data.size());
   camera_frame_wo_images.resize(input.kf_data.size());
-
   // TODO: Add distortion parameters
   for (int i=0; i<all_images.size(); i++) {
     std::cerr << FLAGS_data_dir + "/" + input.kf_data[i].filename << "\n";
@@ -42,20 +41,28 @@ int main(int argc, char **argv)
       input.kf_data[i].translation,
       all_images[i].cols/2, all_images[i].rows/2);
   }
-
-  for (int i=0; i<input.kf_data.size()-FLAGS_windows; i++) {
+  input.corr_data.clear();
+  cv::Point2f center(all_images[0].cols/2, all_images[0].rows/2);
+  
+  // for (int i=0; i<input.kf_data.size()-FLAGS_windows; i++) {
+  for (int i=0; i<1; i++) {
     // Get good points in img i
     std::vector<cv::Point2f> corners;
     cv::goodFeaturesToTrack(all_gray_images[i], corners, maxCorners, qualityLevel, minDistance);
-    std::cout << "Found " << corners.size() << "\n";  
+    std::cout << "Found " << corners.size() << "\n"; 
+    int c1= 0; 
     for (auto pt: corners) {
+      std::cout << c1 << "\n";
+      c1++;
       std::vector<triangulation_bundle> to_triangulate;
       // Get correspondances in img i+1 and i+2 ...
-      to_triangulate.push_back(triangulation_bundle(camera_frame_wo_images[i], pt));
+      to_triangulate.push_back(triangulation_bundle(camera_frame_wo_images[i], 
+          makeCenterSubtracted(pt, center)));
       cv::Point2f location; 
       for (int j=i+1; j<i + FLAGS_windows; j++) {
-        if (findPoint(pt, all_gray_images[i], all_gray_images[j], camera_frame_wo_images[i], camera_frame_wo_images[j], location)) {
-          to_triangulate.push_back(triangulation_bundle(camera_frame_wo_images[j], location));
+        if (findPoint(pt, all_images[i], all_images[j], camera_frame_wo_images[i], camera_frame_wo_images[j], location)) {
+          to_triangulate.push_back(triangulation_bundle(camera_frame_wo_images[j],
+            makeCenterSubtracted(location, center)));
         }
       }
       // Triangulate

@@ -3,6 +3,8 @@
 
 #include "triangulate.h"
 
+cv::Point2f makeCenterSubtracted(cv::Point2f pt, cv::Point2f center);
+
 bool findPoint(cv::Point2f pt, 
   cv::Mat &img1,
   cv::Mat &img2,

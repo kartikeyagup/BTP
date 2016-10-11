@@ -6,6 +6,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <Eigen/Dense>
 #include <vector>
+#include <algorithm>
+#include <math.h>
 #include <iostream>
 
 struct camera_params {
