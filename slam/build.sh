@@ -38,11 +38,7 @@ if [ "$#" -ne 0 ]; then
   elif [ $1 = "corres" ]; then
     if [ -f corres ]; then
       cd ..
-      build/corres -matches_file="data2/batch_1/matches_forRtinlier5point.txt" \
-                   -map_path="data2/batch_1/cluster_list_map.txt" \
-                   -data_dir="./" \
-                   -world_path="data2/batch_1/world1.txt" \
-                   -list_focal_file="data2/batch_1/list_focal.txt"  
+      build/corres data5/ data5/batch_1/matches_forRtinlier5point.txt data5/batch_1/cluster_list_map.txt data5/batch_1/list_focal.txt data5/batch_1/world1.txt
     fi
   else 
     echo "Invalid usage"
