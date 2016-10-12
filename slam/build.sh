@@ -7,8 +7,10 @@ cd build
 cmake ..
 if [ $1 = "slam" ]; then 
   rm -rf slam 
-else
+elif [ $1 = "epipolar" ]; then
   rm -rf epipolar
+else 
+  rm -rf dense corres
 fi
 make -j4
 
@@ -27,6 +29,16 @@ if [ "$#" -ne 0 ]; then
     if [ -f  epipolar ]; then
       cd ..
       build/epipolar
+    fi
+  elif [ $1 = "dense" ]; then
+    if [ -f dense ]; then
+      cd ..
+      build/dense -nvm_file="btp/outputVSFM_GB.nvm" -output_file="btp/newVSFM_GB.nvm" -output_ply="btp/newoutput.ply"
+    fi
+  elif [ $1 = "corres" ]; then
+    if [ -f corres ]; then
+      cd ..
+      build/corres data5/ data5/batch_1/matches_forRtinlier5point.txt data5/batch_1/cluster_list_map.txt data5/batch_1/list_focal.txt data5/batch_1/world1.txt
     fi
   else 
     echo "Invalid usage"

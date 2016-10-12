@@ -45,8 +45,8 @@ int main(int argc, char **argv)
   int frameskip=1;
   int framid = 0;
   int prevframe = 0;
-  int maxCorners = 1000;
-  double qualityLevel = 0.03;
+  int maxCorners = 10000;
+  double qualityLevel = 0.01;
   double minDistance = 2;
   int blockSize = 7;
   bool useHarrisDetector = false;

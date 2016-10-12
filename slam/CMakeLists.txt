@@ -55,6 +55,9 @@ add_library(helpers-cc src/triangulation.cc
                        src/correspondance.cc
                        src/helpers.cc)
 
+add_library (dense-helpers-cc src/triangulate.cc
+                              src/densehelpers.cc)
+
 add_library(sift-cc src/sift_processing.cc)
 
 add_executable(slam scripts/slam.cpp)
@@ -64,6 +67,10 @@ add_executable(main scripts/main.cpp)
 add_executable(place_side scripts/place_side.cpp)
 
 add_executable(epipolar scripts/epipolar_verification.cpp)
+
+add_executable(dense scripts/densify.cpp)
+
+add_executable(corres scripts/corres_new.cpp)
 
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
@@ -81,3 +88,9 @@ target_link_libraries(place_side ${OpenCV_LIBS})
 
 target_link_libraries(epipolar ${OpenCV_LIBS}
                                 gflags)
+
+target_link_libraries(dense ${OpenCV_LIBS}
+                            gflags
+                            dense-helpers-cc)
+
+target_link_libraries(corres ${OpenCV_LIBS})
