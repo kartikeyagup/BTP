@@ -103,11 +103,11 @@ bool findPoint(cv::Point2f pt,
   Eigen::Vector3f line = prod*p1;
   line(2, 0)*= frame_2.intrinsics.f;
 
-  if (line(0,0)<1e-8) {
+  if (fabs(line(0,0))<1e-8) {
     // std::cerr << "Ill conditioned x\n";
     return false;
   }
-  if (line(1,0)<1e-8) {
+  if (fabs(line(1,0))<1e-8) {
     // std::cerr << "Ill conditioned y\n";
     return false;
   }

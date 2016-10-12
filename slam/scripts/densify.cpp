@@ -11,7 +11,7 @@ DEFINE_string(nvm_file, "data2/outputVSFM_GB.nvm", "Path to nvm file");
 DEFINE_string(data_dir, "data2", "Path to directory containing images");
 DEFINE_string(output_file, "data2/newVSFM_GB.nvm", "Output nvm file");
 DEFINE_string(output_ply, "data2/newOutput.ply", "Generate ply file");
-DEFINE_int32(windows, 2, "Windows size for dense matches");
+DEFINE_int32(windows, 4, "Windows size for dense matches");
 
 int main(int argc, char **argv)
 {
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
       input.kf_data[i].translation,
       all_images[i].cols/2, all_images[i].rows/2);
   }
-  input.corr_data.clear();
+  // input.corr_data.clear();
   cv::Point2f center(all_images[0].cols/2, all_images[0].rows/2);
   
   // for (int i=0; i<input.kf_data.size()-FLAGS_windows; i++) {
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
         }
       }
       // Triangulate
-      if (to_triangulate.size()>1) {
+      if (to_triangulate.size()>2) {
         cv::Point3f final3d = Triangulate(to_triangulate);
 
         // Add to input 3D cloud
