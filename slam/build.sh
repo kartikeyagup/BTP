@@ -10,7 +10,7 @@ if [ $1 = "slam" ]; then
 elif [ $1 = "epipolar" ]; then
   rm -rf epipolar
 else 
-  rm -rf dense corres
+  rm -rf dense corres merge
 fi
 make -j4
 
@@ -39,6 +39,11 @@ if [ "$#" -ne 0 ]; then
     if [ -f corres ]; then
       cd ..
       build/corres data5/ data5/batch_1/matches_forRtinlier5point.txt data5/batch_1/cluster_list_map.txt data5/batch_1/list_focal.txt data5/batch_1/world1.txt
+    fi
+  elif [ $1 = "merge" ]; then
+    if [ -f merge ]; then
+      cd ..
+      build/merge
     fi
   else 
     echo "Invalid usage"
