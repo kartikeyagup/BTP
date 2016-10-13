@@ -3,10 +3,10 @@
 #include <gflags/gflags.h>
 #include <string>
 
-DEFINE_string(path1, "btp/batch0/sfm.nvm", "Path to 1st nvm file");
-DEFINE_string(path2, "btp/batch1/sfm.nvm", "Path to 2nd nvm file");
-DEFINE_string(output_ply, "btp/combined01.ply", "Output combined ply file");
-DEFINE_string(output_nvm, "btp/combined01.nvm", "Output combined nvm file");
+DEFINE_string(path1, "btp/batch2/sfm.nvm", "Path to 1st nvm file");
+DEFINE_string(path2, "btp/batch3/sfm.nvm", "Path to 2nd nvm file");
+DEFINE_string(output_ply, "btp/combined23.ply", "Output combined ply file");
+DEFINE_string(output_nvm, "btp/combined23.nvm", "Output combined nvm file");
 
 int main(int argc, char **argv)
 {

@@ -259,8 +259,6 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
 
   for (auto it: f2.corr_data) {
     if (m1.find(it.corr[0].siftid) != m1.end()) {
-      // std::cout << it.corr[0].siftid << "\n";
-      // std::cout << m1[it.corr[0].siftid] << "\n";
       points_common.push_back(std::make_pair(m1[it.corr[0].siftid], it.point_3d));
     }
   }
@@ -287,19 +285,16 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
   for (int i=0; i<points_common.size(); i++) {
     points1(0,i) = points_common[i].first(0,0) - answer1(0,0);
     points1(1,i) = points_common[i].first(1,0) - answer1(1,0);
-    points1(2,i) = points_common[i].first(2,0) - answer1(2,0);
+    points1(2,i) = points_common[i].first(2,0) - answer1(2,0);    
     points2(0,i) = points_common[i].second(0,0) - answer2(0,0);
     points2(1,i) = points_common[i].second(1,0) - answer2(1,0);
     points2(2,i) = points_common[i].second(2,0) - answer2(2,0);
   }
 
-  Eigen::MatrixXf temp = points1 * points2.transpose();
+  Eigen::MatrixXf temp = points1 * (points2.transpose());
   Eigen::JacobiSVD<Eigen::MatrixXf> svd(temp, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  std::cout << "Scale: " << svd.singularValues() << "\n";
-  float c = svd.singularValues()(0,0);
 
   Eigen::MatrixXf s = Eigen::MatrixXf::Identity(3, 3);
-  std::cout << s << "\n";
   Eigen::MatrixXf r = svd.matrixU() * svd.matrixV().transpose();
   if (r.determinant() < 0) {
     std::cerr << "Determinant obtained < 0\n";
@@ -315,10 +310,30 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
     }
     s(minsofar, minsofar) = -1;
     r = svd.matrixU() * s *  svd.matrixV().transpose();
-  } 
-  Eigen::Vector3f t= answer1 - c*r*answer2;
-  std::cout << r << "\n";
-  std::cout << t << "\n";
+  }
+
+  float scale = s(0,0)*svd.singularValues()(0,0) + 
+      s(1,1)*svd.singularValues()(1,0) + 
+      s(2,2)*svd.singularValues()(2,0); 
+
+  float denom = points2.squaredNorm();
+  // float denom = 1;
+  scale /= denom;
+
+  Eigen::Vector3f t= answer1 - scale*r*answer2;
+  std::cout << scale << "\n";
+  // std::cout << r << "\n";
+  // std::cout << t << "\n";
+  for (int i=0; i<f2.corr_data.size(); i++) {
+    // Eigen::Vector4f temp_pt;
+    // temp_pt(0,0) = f2.corr_data[i].point_3d(0,0) * scale;
+    // temp_pt(1,0) = f2.corr_data[i].point_3d(1,0) * scale;
+    // temp_pt(2,0) = f2.corr_data[i].point_3d(2,0) * scale;
+    // temp_pt(3,0) = 1;
+    f2.corr_data[i].point_3d = scale*r*f2.corr_data[i].point_3d + t;
+    // RT
+    // f2.corr_data[i].point_3d = scale*r*f1.corr_data[i].point_3d + t;
+  }
 }
 
 #endif
