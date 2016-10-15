@@ -11,6 +11,7 @@ struct corr {
   std::vector<int> unique_id;
   std::vector<cv::Point2f> p1;
   std::vector<cv::Point2f> p2; 
+  std::vector<cv::Vec3b> col;
   cv::Point2f delta;
 
   corr() {};
@@ -27,6 +28,9 @@ struct corr {
     p1 = other.p1;
     p2 = other.p2;
     delta = other.delta;
+    col = other.col;
+    assert (p1.size() == p2.size());
+    assert (p1.size() == col.size());
   }
 };
 

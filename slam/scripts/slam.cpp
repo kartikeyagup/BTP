@@ -25,14 +25,12 @@ DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
-
-// constexpr float focal = 1134;
-// constexpr int cx = 640;
-// constexpr int cy = 360;
+DEFINE_int32(min_corners, 50, "Minimum number of points in image below which more will be added");
 
 float focal = 1134.0/1280;
 int cx = 960;
 int cy = 540;
+constexpr int windows_size = 10;
 
 int main(int argc, char **argv)
 {
@@ -60,6 +58,7 @@ int main(int argc, char **argv)
   std::vector<cv::Mat> all_images;
   cv::Mat oldFrame, newFrame, mask, rawFrame, tempFrame;
   std::vector<cv::Point2f> corners, corners_prev, corners_inverse;
+  std::vector<cv::Vec3b> colors;
   std::vector<uchar> status, status_inverse;
   std::vector<float> err;
   cv::Size winSize(15, 15);
@@ -92,7 +91,7 @@ int main(int argc, char **argv)
       focal *= 2*cx;
       std::cout << "Cx is: " << cx << "\n";
       std::cout << "Cy is: " << cy << "\n";
-      std::cout << "Focal is" << focal << "\n";
+      std::cout << "Focal is: " << focal << "\n";
       cv::goodFeaturesToTrack(oldFrame,
         corners_prev, 
         maxCorners, 
@@ -106,6 +105,16 @@ int main(int argc, char **argv)
       siftids = std::vector<int> ();
       for (int i=siftlatest; i<siftlatest+corners_prev.size(); i++) {
         siftids.push_back(i);
+      }
+      for (int i=0; i<corners_prev.size(); i++) {
+        colors.push_back(rawFrame.at<cv::Vec3b>(corners_prev[i]));
+        if (colors.rbegin()->val[0] == 0) {
+          if (colors.rbegin()->val[1] == 0) {
+            if (colors.rbegin()->val[2] == 0) {
+              std::cout << "Got 0 as color\n";
+            }
+          }
+        }
       }
       siftlatest = siftlatest+corners_prev.size();
       prevframe = framid;
@@ -142,6 +151,7 @@ int main(int argc, char **argv)
           frame_corr.p1.push_back(corners_prev[i]);
           frame_corr.p2.push_back(corners[i]);
           frame_corr.unique_id.push_back(siftids[i]);
+          frame_corr.col.push_back(colors[i]);
         }
       }
       CalculateDelta(frame_corr);
@@ -150,27 +160,26 @@ int main(int argc, char **argv)
       newFrame.copyTo(oldFrame);
       std::vector<int> newsiftids;
       corners_prev.clear();
+      std::vector<cv::Vec3b> temp_colors;
       for (int i=0; i<corners.size(); i++) {
         if (status[i]) {
+          temp_colors.push_back(colors[i]);
           corners_prev.push_back(corners[i]);
           newsiftids.push_back(siftids[i]);
         }
       }
+      colors = temp_colors;
       siftids = newsiftids;
       assert(siftids.size() == corners_prev.size());
+      assert(siftids.size() == colors.size());
     }
 
     cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
-    for (int i=0; i<corners_prev.size(); i++) {
-      cv::circle(rawFrame, corners_prev[i], 4, cv::Scalar(0), -1);
-    }
-    cv::imshow("new", rawFrame);
-    if (cv::waitKey(1) == 27) 
-      break;
+
     prevframe = framid;
     framid++;
 
-    if (framid %5 == 0) {
+    if ((framid %5 == 0) || (corners_prev.size() < FLAGS_min_corners)) {
       mask = cv::Mat::ones(oldFrame.size(), CV_8UC1);
       for (int i=0; i<corners_prev.size(); i++) {
         cv::circle(mask, corners_prev[i], 3, cv::Scalar(0), -1);
@@ -188,20 +197,43 @@ int main(int argc, char **argv)
       corners_prev.insert(corners_prev.end(),
         newcorners.begin(),
         newcorners.end());
+      for (int i=0; i<newcorners.size(); i++) {
+        colors.push_back(rawFrame.at<cv::Vec3b> (newcorners[i]));
+        // if (colors.rbegin()->val[0] == 0) {
+        //   if (colors.rbegin()->val[1] == 0) {
+        //     if (colors.rbegin()->val[2] == 0) {
+        //       std::cout << newcorners[i] << "\n";
+        //       std::cout << "Got 0 as color\n";
+        //     }
+        //   }
+        // }
+      }
       for (int i=siftlatest; i<siftlatest+newcorners.size(); i++) {
         siftids.push_back(i);
       }
       siftlatest = siftlatest+newcorners.size();
+      assert(colors.size() == siftids.size());
+      assert(colors.size() == corners_prev.size());
     }
+
+    for (int i=0; i<corners_prev.size(); i++) {
+      cv::circle(rawFrame, corners_prev[i], 4, cv::Scalar(0), -1);
+    }
+    cv::imshow("new", rawFrame);
+    if (cv::waitKey(1) == 27) 
+      break;
   }
 
   std::cout << "Starting 1st round of compression\n";
   // Correspondance compression.
   int corres_skip= FLAGS_keyframe;
   std::vector<std::vector<corr> > Chunks;
+  std::vector<std::vector<corr> > Chunks_Intermediate;
+  Chunks_Intermediate.push_back(std::vector<corr> ());
   int chunksize = FLAGS_chunks;
   std::vector<corr> compressed_all;
   int fid = 0;
+  int chi = 1;
   for (int i=0; i<all_corr.size();) {
     if (fid%chunksize==0) {
       Chunks.push_back(std::vector<corr> ());
@@ -228,8 +260,14 @@ int main(int argc, char **argv)
     all_files[Chunks.size()-1][compressed.frame_2] = true;
     compressed.frame_1 = fid;
     compressed.frame_2 = fid+1;
-    fid++;        
+    fid++;
     ChangeCenterSubtracted(compressed, cx, cy);
+    if ((fid>chi*chunksize - windows_size) and (fid<chi*chunksize + windows_size)) {
+      Chunks_Intermediate[Chunks_Intermediate.size()-1].push_back(compressed);
+    } else if (fid == chi*chunksize+ windows_size) {
+      chi++;
+      Chunks_Intermediate.push_back(std::vector<corr> ());
+    }
     Chunks[Chunks.size()-1].push_back(compressed);
   }
   std::cout << "Done with 1st round of compression\n";
@@ -337,6 +375,58 @@ int main(int argc, char **argv)
     list_focal.close();
     num_cors.close();
   }
+
+  std::cout << "Number of intermedia chunks : " << Chunks_Intermediate.size() << "\n";
+  for (int ch=0; ch<Chunks_Intermediate.size(); ch++) {
+    std::ofstream rdata;
+    rdata.open(FLAGS_dirname + "/batch_" + std::to_string(ch) + "/IntermediateRT.txt");
+    all_corr = Chunks_Intermediate[ch];
+    std::vector<corr> new_compressed;
+    for (int i=0; i<all_corr.size(); i++) {
+      corr compressed = all_corr[i];
+      new_compressed.push_back(compressed);
+      for (int j=1; i+j < all_corr.size(); j++) {
+        compressed = CompressCorr(compressed, all_corr[i+j]);
+        new_compressed.push_back(compressed);
+      }
+    }
+    all_corr = new_compressed;
+    std::cout << "Done with 3nd round of compression\n";
+    numoutmatches = 0;
+    for (int i=0; i<all_corr.size(); i++) {
+      // std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
+      TwoViewInfo twoview_info;
+      std::vector<int> inliers;
+      if (GetEssentialRT(all_corr[i], twoview_info, inliers, options, focal)) {
+        rdata << all_corr[i].frame_1 << " " << all_corr[i].frame_2 << "\n";
+        rdata << twoview_info.rotationmat_2(0,0) << " " << twoview_info.rotationmat_2(0,1) << " " << twoview_info.rotationmat_2(0,2) << " " <<
+                 twoview_info.rotationmat_2(1,0) << " " << twoview_info.rotationmat_2(1,1) << " " << twoview_info.rotationmat_2(1,2) << " " <<
+                 twoview_info.rotationmat_2(2,0) << " " << twoview_info.rotationmat_2(2,1) << " " << twoview_info.rotationmat_2(2,2) << "\n";
+        rdata << twoview_info.translation_2(0) << " " << twoview_info.translation_2(1) << " " << twoview_info.translation_2(2) <<"\n";
+        
+        rdata << inliers.size() << "\n";
+        for (int j = 0; j<inliers.size(); j++) {
+          int loc = inliers[j];
+          int sftid = all_corr[i].unique_id[loc];
+          int f1 = all_corr[i].frame_1;
+          int f2 = all_corr[i].frame_2;
+          rdata << (int) all_corr[i].col[loc].val[0] << " "
+                << (int) all_corr[i].col[loc].val[1] << " "
+                << (int) all_corr[i].col[loc].val[2] << " "
+                << all_corr[i].unique_id[loc] << " "
+                << all_corr[i].p1[loc].x << " " 
+                << all_corr[i].p1[loc].y << " " 
+                << all_corr[i].unique_id[loc] << " "
+                << all_corr[i].p2[loc].x << " " 
+                << all_corr[i].p2[loc].y << "\n";
+        }
+      } else {
+        std::cerr << "Something bad still happened!!!!!!!!!!\n";
+      }
+    }
+    rdata.close();
+  }
+
   listfocalglobal << "img_" << *((*fileids.rbegin()).rbegin()) << ".jpg " << focal << "\n";
   listfocalglobal.close();
   inifile.close();

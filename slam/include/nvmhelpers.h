@@ -27,6 +27,11 @@ struct imgcorr {
   cv::Point2f img_location;
 };
 
+imgcorr ChangeCamId(imgcorr inp, int x) {
+  inp.imgid = x;
+  return inp;
+}
+
 imgcorr fix_corr(imgcorr inp, int offset) {
   imgcorr result;
 
@@ -332,13 +337,13 @@ void get_best_translation(nvm_file &f1, nvm_file &f2) {
 void GetBestRST(nvm_file &f1, nvm_file& f2) {
   std::unordered_map<int, Eigen::Vector3f> m1;
   for (auto it: f1.corr_data) {
-    if (it.corr.size()>=f1.median_val)
+    if (it.corr.size()>=0)
       m1[it.corr[0].siftid] = it.point_3d;
   }
   std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f> > points_common;
 
   for (auto it: f2.corr_data) {
-    if (it.corr.size()>=f2.median_val) {
+    if (it.corr.size()>=0) {
       if (m1.find(it.corr[0].siftid) != m1.end()) {
         points_common.push_back(std::make_pair(m1[it.corr[0].siftid], it.point_3d));
       }

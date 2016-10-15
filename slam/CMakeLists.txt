@@ -98,4 +98,5 @@ target_link_libraries(dense ${OpenCV_LIBS}
 target_link_libraries(corres ${OpenCV_LIBS})
 
 target_link_libraries(merge ${OpenCV_LIBS}
-                             gflags)
+                             gflags
+                             dense-helpers-cc)
