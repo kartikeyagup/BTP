@@ -26,9 +26,13 @@ DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
 
-constexpr float focal = 1134;
-constexpr int cx = 640;
-constexpr int cy = 360;
+// constexpr float focal = 1134;
+// constexpr int cx = 640;
+// constexpr int cy = 360;
+
+float focal = 1134.0/1280;
+int cx = 960;
+int cy = 540;
 
 int main(int argc, char **argv)
 {
@@ -83,6 +87,12 @@ int main(int argc, char **argv)
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       newFrame.copyTo(oldFrame);
+      cx = oldFrame.cols/2;
+      cy = oldFrame.rows/2;
+      focal *= 2*cx;
+      std::cout << "Cx is: " << cx << "\n";
+      std::cout << "Cy is: " << cy << "\n";
+      std::cout << "Focal is" << focal << "\n";
       cv::goodFeaturesToTrack(oldFrame,
         corners_prev, 
         maxCorners, 
