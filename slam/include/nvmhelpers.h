@@ -10,6 +10,7 @@
 #include <opencv2/core/core.hpp>
 #include <Eigen/Dense>
 #include <Eigen/SVD>
+#include <algorithm>
 
 struct keyframe_data {
   std::string filename;
@@ -25,6 +26,16 @@ struct imgcorr {
   int siftid;
   cv::Point2f img_location;
 };
+
+imgcorr fix_corr(imgcorr inp, int offset) {
+  imgcorr result;
+
+  result.imgid = inp.imgid + offset;
+  result.siftid = inp.siftid;
+  result.img_location = inp.img_location;
+
+  return result;
+}
 
 struct Corr3D {
   Eigen::Vector3f point_3d;
@@ -44,8 +55,9 @@ struct nvm_file {
   std::string description;
   std::vector<keyframe_data> kf_data;
   std::vector<Corr3D> corr_data;
+  int median_val;
 
-  nvm_file();
+  nvm_file() {};
   nvm_file(std::string path) {
     std::ifstream nvm_file;
     nvm_file.open(path);
@@ -65,11 +77,13 @@ struct nvm_file {
     nvm_file >> num_corr;
     std::cerr << "Number of correspondances " << num_corr << "\n";
     corr_data.resize(num_corr);
+    std::vector<int> all_corrs_counts;
     for (int i=0; i<num_corr; i++) {
       nvm_file >> corr_data[i].point_3d(0,0) >> corr_data[i].point_3d(1,0) >> corr_data[i].point_3d(2,0)
                >> corr_data[i].color.x >> corr_data[i].color.y >> corr_data[i].color.z; 
       int num_2d;
       nvm_file >> num_2d;
+      all_corrs_counts.push_back(num_2d);
       corr_data[i].corr.resize(num_2d);
       for (int j=0; j<num_2d; j++) {
         nvm_file >> corr_data[i].corr[j].imgid >> corr_data[i].corr[j].siftid
@@ -81,6 +95,9 @@ struct nvm_file {
     }
     std::cout << "Number of corrs: " << corr_data.size() << "\n";
     nvm_file.close();
+    std::nth_element(all_corrs_counts.begin(), all_corrs_counts.begin() + all_corrs_counts.size()/2, all_corrs_counts.end());
+    median_val = all_corrs_counts[all_corrs_counts.size()/2];
+    std::cout << median_val << "\n";
   }
 
   void NormaliseScale(float scf) {
@@ -160,13 +177,75 @@ struct nvm_file {
     plyfile.open(path);
     plyfile.precision(8);
     plyfile << "ply\nformat ascii 1.0\nelement vertex "
-            << corr_data.size() << "\nproperty float x\nproperty float y\nproperty float z\n"
+            << corr_data.size() + kf_data.size() << "\nproperty float x\nproperty float y\nproperty float z\n"
             << "property uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n";
     for (int i=0; i<corr_data.size(); i++) {
       plyfile << corr_data[i].point_3d(0, 0) << " " << corr_data[i].point_3d(1, 0) << " " << corr_data[i].point_3d(2,0) << " " 
               << corr_data[i].color.x << " " << corr_data[i].color.y << " " << corr_data[i].color.z << "\n";
     }
+    for (int i=0; i<kf_data.size(); i++) {
+      Eigen::Vector3f temp = - kf_data[i].rotation.transpose() * kf_data[i].translation;
+      plyfile << temp(0,0) << " " << temp(1,0) << " " << temp(2,0) << " 255 255 255\n";
+    }
     plyfile.close();
+  }
+
+  void save_focal_for_optimisation(std::string path) {
+    std::ofstream ffile;
+    ffile.open(path);
+    ffile << kf_data.size() << "\n";
+    for (int i=0; i<kf_data.size(); i++) {
+      ffile << kf_data[i].filename << " " << kf_data[i].focal << "\n";
+    }
+    ffile.close();
+  }
+
+  void save_rt_global_file(std::string path) {
+    std::ofstream ffile;
+    ffile.open(path);
+    for (int i=0; i<kf_data.size(); i++) {
+      Eigen::Vector3f temp = -kf_data[i].rotation.transpose()*kf_data[i].translation;
+      ffile << kf_data[i].rotation(0,0) << " " << kf_data[i].rotation(0,1) << " " << kf_data[i].rotation(0,2) << " " 
+            << kf_data[i].rotation(1,0) << " " << kf_data[i].rotation(1,1) << " " << kf_data[i].rotation(1,2) << " " 
+            << kf_data[i].rotation(2,0) << " " << kf_data[i].rotation(2,1) << " " << kf_data[i].rotation(2,2) << "\n" 
+            << temp(0,0) << " " << temp(1,0) << " " << temp(2,0) << "\n"; 
+    }
+    ffile.close();
+  }
+
+  void save_distortion_file(std::string path) {
+    std::ofstream ffile;
+    ffile.open(path);
+    for (int i=0; i<kf_data.size(); i++) {
+      ffile << kf_data[i].d1 << "\n";
+    }
+    ffile.close(); 
+  }
+
+  void save_invmap(std::string path) {
+    std::ofstream ffile;
+    ffile.open(path);
+    for (int i=0; i<kf_data.size(); i++) {
+      ffile << i << " " << kf_data[i].filename << "\n";
+    }
+    ffile.close();
+  }
+
+  void save_ours_new(std::string path) {
+    std::ofstream nvmfile;
+    nvmfile.open(path);
+    for (int i=0; i<corr_data.size(); i++) {
+      nvmfile << corr_data[i].point_3d(0, 0) << " " << corr_data[i].point_3d(1,0) << " " << corr_data[i].point_3d(2,0) << " "
+              << corr_data[i].color.x << " " << corr_data[i].color.y << " " << corr_data[i].color.z << " "
+              << corr_data[i].corr.size() << " ";
+      for (int j=0; j<corr_data[i].corr.size(); j++) {
+        nvmfile << corr_data[i].corr[j].imgid << " "
+                << corr_data[i].corr[j].siftid << " "
+                << corr_data[i].corr[j].img_location.x << " " << corr_data[i].corr[j].img_location.y << " ";
+      }
+      nvmfile << "\n";
+    }
+    nvmfile.close();
   }
 };
 
@@ -253,15 +332,20 @@ void get_best_translation(nvm_file &f1, nvm_file &f2) {
 void GetBestRST(nvm_file &f1, nvm_file& f2) {
   std::unordered_map<int, Eigen::Vector3f> m1;
   for (auto it: f1.corr_data) {
-    m1[it.corr[0].siftid] = it.point_3d;
+    if (it.corr.size()>=f1.median_val)
+      m1[it.corr[0].siftid] = it.point_3d;
   }
   std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f> > points_common;
 
   for (auto it: f2.corr_data) {
-    if (m1.find(it.corr[0].siftid) != m1.end()) {
-      points_common.push_back(std::make_pair(m1[it.corr[0].siftid], it.point_3d));
+    if (it.corr.size()>=f2.median_val) {
+      if (m1.find(it.corr[0].siftid) != m1.end()) {
+        points_common.push_back(std::make_pair(m1[it.corr[0].siftid], it.point_3d));
+      }
     }
   }
+
+  std::cout << "Number of points " << points_common.size() << "\n";
 
   Eigen::Vector3f answer1, answer2;
   answer1.setZero();
@@ -295,6 +379,7 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
   Eigen::JacobiSVD<Eigen::MatrixXf> svd(temp, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
   Eigen::MatrixXf s = Eigen::MatrixXf::Identity(3, 3);
+  std::cout << svd.singularValues() << "\n";
   Eigen::MatrixXf r = svd.matrixU() * svd.matrixV().transpose();
   if (r.determinant() < 0) {
     std::cerr << "Determinant obtained < 0\n";
@@ -317,23 +402,61 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
       s(2,2)*svd.singularValues()(2,0); 
 
   float denom = points2.squaredNorm();
-  // float denom = 1;
   scale /= denom;
 
   Eigen::Vector3f t= answer1 - scale*r*answer2;
   std::cout << scale << "\n";
-  // std::cout << r << "\n";
-  // std::cout << t << "\n";
   for (int i=0; i<f2.corr_data.size(); i++) {
-    // Eigen::Vector4f temp_pt;
-    // temp_pt(0,0) = f2.corr_data[i].point_3d(0,0) * scale;
-    // temp_pt(1,0) = f2.corr_data[i].point_3d(1,0) * scale;
-    // temp_pt(2,0) = f2.corr_data[i].point_3d(2,0) * scale;
-    // temp_pt(3,0) = 1;
     f2.corr_data[i].point_3d = scale*r*f2.corr_data[i].point_3d + t;
-    // RT
-    // f2.corr_data[i].point_3d = scale*r*f1.corr_data[i].point_3d + t;
   }
+
+  for (int i=0; i<f2.kf_data.size(); i++) {
+    f2.kf_data[i].rotation = f2.kf_data[i].rotation * r.transpose();
+    f2.kf_data[i].translation = scale*f2.kf_data[i].translation - f2.kf_data[i].rotation*t;
+  }
+}
+
+nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
+  nvm_file output;
+  assert(f1.description == f2.description);
+  output.description = f1.description;
+  for (int i=0; i<f1.kf_data.size(); i++) {
+    output.kf_data.push_back(f1.kf_data[i]);
+  }
+  for (int i=1; i<f2.kf_data.size(); i++) {
+    output.kf_data.push_back(f2.kf_data[i]);
+  }
+
+  std::unordered_map<int, Corr3D> all_mappings;
+  for (int i=0; i<f1.corr_data.size(); i++) {
+    all_mappings[f1.corr_data[i].corr[0].siftid] = f1.corr_data[i];
+  }
+  int offset = f1.kf_data.size()-1;
+
+  for (int i=0; i<f2.corr_data.size(); i++) {
+    int sftid = f2.corr_data[i].corr[0].siftid;
+    if (all_mappings.find(sftid) == all_mappings.end()) {
+        all_mappings[sftid].point_3d = f2.corr_data[i].point_3d;
+        all_mappings[sftid].color = f2.corr_data[i].color;  
+      for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
+        all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
+      }
+    } else {
+      // sift id existed
+      for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
+        if (f2.corr_data[i].corr[j].imgid>0) {
+          all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
+        } 
+      }
+    }
+  }
+
+  for (auto it: all_mappings) {
+    output.corr_data.push_back(it.second);
+  }  
+  std::cout << "Number of points " << output.corr_data.size() << "\n";
+
+  return output;
 }
 
 #endif
