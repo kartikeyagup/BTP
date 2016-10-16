@@ -428,6 +428,7 @@ nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
   for (int i=0; i<f1.kf_data.size(); i++) {
     output.kf_data.push_back(f1.kf_data[i]);
   }
+  // TODO: No offset in case last or first camera was removed.
   for (int i=1; i<f2.kf_data.size(); i++) {
     output.kf_data.push_back(f2.kf_data[i]);
   }
