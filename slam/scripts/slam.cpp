@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <stdio.h>
 #include <stdlib.h>
+#include "tracking_helpers.h"
 #include "sift_processing.h"
 #include "helpers.h"
 #include "gflags/gflags.h"
@@ -28,9 +29,9 @@ DEFINE_bool(use_sift, false, "Use sift for corresponances");
 DEFINE_int32(min_corners, 50, "Minimum number of points in image below which more will be added");
 
 float focal = 1134.0/1280;
-int cx = 960;
-int cy = 540;
-constexpr int windows_size = 10;
+int cx = 640;
+int cy = 360;
+constexpr int windows_size = 5;
 
 int main(int argc, char **argv)
 {
@@ -82,7 +83,8 @@ int main(int argc, char **argv)
     if (FLAGS_undistort) {
       undistort(rawFrame);
     }
-    std::cerr << framid <<"\n";
+    if (framid%10 == 0)
+      std::cerr << framid <<"\n";
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       newFrame.copyTo(oldFrame);
@@ -144,8 +146,8 @@ int main(int argc, char **argv)
             status[i] = 0;
             continue;
           }
-          assert(corners[i].x < 2*cx);
-          assert(corners[i].y < 2*cy);
+          assert(corners[i].x <= 2*cx-1);
+          assert(corners[i].y <= 2*cy-1);
           assert(corners[i].x >= 0);
           assert(corners[i].y >= 0);
           frame_corr.p1.push_back(corners_prev[i]);

@@ -428,8 +428,11 @@ nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
   for (int i=0; i<f1.kf_data.size(); i++) {
     output.kf_data.push_back(f1.kf_data[i]);
   }
-  // TODO: No offset in case last or first camera was removed.
-  for (int i=1; i<f2.kf_data.size(); i++) {
+  int offset = 0;
+  if (f1.kf_data.rbegin()->filename == f2.kf_data.begin()->filename) {
+    offset = 1;
+  }
+  for (int i=offset; i<f2.kf_data.size(); i++) {
     output.kf_data.push_back(f2.kf_data[i]);
   }
 
@@ -437,7 +440,7 @@ nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
   for (int i=0; i<f1.corr_data.size(); i++) {
     all_mappings[f1.corr_data[i].corr[0].siftid] = f1.corr_data[i];
   }
-  int offset = f1.kf_data.size()-1;
+  offset = f1.kf_data.size()-offset;
 
   for (int i=0; i<f2.corr_data.size(); i++) {
     int sftid = f2.corr_data[i].corr[0].siftid;
