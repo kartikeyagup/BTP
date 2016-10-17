@@ -10,6 +10,7 @@ corr CompressCorr(corr &init, corr &final) {
       compressed.unique_id.push_back(init.unique_id[i]);
       compressed.p1.push_back(init.p1[i]);
       compressed.p2.push_back(final.p2[finalcorr]);
+      compressed.col.push_back(init.col[i]);
       finalcorr++;
     }
   }

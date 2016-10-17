@@ -72,6 +72,8 @@ add_executable(dense scripts/densify.cpp)
 
 add_executable(corres scripts/corres_new.cpp)
 
+add_executable(merge scripts/merge_pt_cloud.cpp)
+
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
                            glog
@@ -94,3 +96,7 @@ target_link_libraries(dense ${OpenCV_LIBS}
                             dense-helpers-cc)
 
 target_link_libraries(corres ${OpenCV_LIBS})
+
+target_link_libraries(merge ${OpenCV_LIBS}
+                             gflags
+                             dense-helpers-cc)
