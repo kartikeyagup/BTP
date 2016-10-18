@@ -21,7 +21,7 @@
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
 DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 120, "Max number of keyframes in a chunk");
+DEFINE_int32(chunks, 100, "Max number of keyframes in a chunk");
 DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
@@ -78,8 +78,8 @@ int main(int argc, char **argv)
     if (FLAGS_undistort) {
       undistort(rawFrame);
     }
-    if (framid%10 == 0)
-      std::cerr << "Processing frame " << framid <<"\n";
+    // if (framid%10 == 0)
+    std::cout << "\rProcessing frame " << framid <<std::flush;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       images[0] = newFrame;
@@ -211,7 +211,7 @@ int main(int argc, char **argv)
     i=i+j;
   }
 
-  std::cout << "Done with making "<< keyframe_ids.size() << " keyframes\n";
+  std::cout << "Made "<< keyframe_ids.size() << " keyframes\n";
 
   std::ofstream listfocalglobal, inifile;
   listfocalglobal.open(FLAGS_dirname + "/list_focal.txt");
@@ -238,6 +238,7 @@ int main(int argc, char **argv)
         corr compressed = compress(all_frame_pts[all_corr_ids[i]], all_frame_pts[all_corr_ids[i+j]]);
         compressed.frame_1 = i;
         compressed.frame_2 = i+j;
+        ChangeCenterSubtracted(compressed, cx, cy);
         new_compressed.push_back(compressed);        
       }
     }
@@ -327,6 +328,7 @@ int main(int argc, char **argv)
     for (int i=0; i<all_corr_ids.size(); i++) {
       for (int j=1; i+j<all_corr_ids.size(); j++) {
         corr compressed = compress(all_frame_pts[all_corr_ids[i]], all_frame_pts[all_corr_ids[i+j]]);
+        ChangeCenterSubtracted(compressed, cx, cy);
         new_compressed.push_back(compressed);
       }
     }
