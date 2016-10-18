@@ -112,6 +112,7 @@ int main(int argc, char **argv)
     assert(finalindex == framid-1);
     frame_pts last = Track(all_frame_pts[finalindex], images[finalindex], newFrame, framid, cx, cy);
     for (int i = finalindex -1; i>=initindex; i--) {
+      assert(false);
       frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
       add_more_features(last, temp_track);
     }
@@ -234,7 +235,7 @@ int main(int argc, char **argv)
 
     std::vector<corr> new_compressed;
     for (int i=0; i<all_corr_ids.size(); i++) {
-      for (int j=1; j < FLAGS_overlap && (i+j <all_corr_ids.size()); j++) {
+      for (int j=1; j <= FLAGS_overlap && (i+j <all_corr_ids.size()); j++) {
         corr compressed = compress(all_frame_pts[all_corr_ids[i]], all_frame_pts[all_corr_ids[i+j]]);
         compressed.frame_1 = i;
         compressed.frame_2 = i+j;

@@ -22,6 +22,7 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
   std::vector<cv::Point2f> &inversetracking, 
   std::vector<uchar> &status,
   std::vector<uchar> &statusinv) {
+  assert(prevtracking.size() == inversetracking.size());
   int tot, removed;
   tot = prevtracking.size();
   removed=0;

@@ -1,4 +1,5 @@
 #include "tracking_helpers.h"
+#include <iostream>
 
 frame_pts Track(frame_pts& init, cv::Mat &oldFrame, cv::Mat &newFrame, int fid,
   int cx, int cy) {
@@ -24,15 +25,16 @@ frame_pts Track(frame_pts& init, cv::Mat &oldFrame, cv::Mat &newFrame, int fid,
 
   for (int i=0; i<corners.size(); i++) {
     if (status[i]) {
-      if ((corners[i].x > (2*cx -1)) || (corners[i].y > (2*cy -1)) || (corners[i].x <0) || (corners[i].y<0))
+      if ((corners[i].x >= (2*cx -1)) || (corners[i].y >= (2*cy -1)) || (corners[i].x <0) || (corners[i].y<0))
       {
         status[i] = 0;
         continue;
       }
-      assert(corners[i].x <= 2*cx-1);
-      assert(corners[i].y <= 2*cy-1);
+      assert(corners[i].x < 2*cx-1);
+      assert(corners[i].y < 2*cy-1);
       assert(corners[i].x >= 0);
       assert(corners[i].y >= 0);
+      assert(answer.features.find(siftids[i])==answer.features.end());
       answer.features[siftids[i]] = img_pt(corners[i], init.features[siftids[i]].color);
     }
   }
