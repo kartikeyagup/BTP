@@ -12,14 +12,37 @@
 struct img_pt {
   cv::Point2f pt;
   cv::Vec3b color;
+
+  img_pt() {};
+  img_pt(cv::Point2f p, cv::Vec3b v) {
+    pt = p;
+    color = v;
+  };
+
 };
 
 struct frame_pts {
   int frame_id;
   std::unordered_map<int, img_pt> features;
+
+  frame_pts() {};
+  frame_pts(int x) {
+    frame_id = x;
+  }
+
+  std::vector<cv::Point2f> get_vector(std::vector<int> &siftids) {
+    std::vector<cv::Point2f> answer;
+    for (auto it: features) {
+      answer.push_back(it.second.pt);
+      siftids.push_back(it.first);
+    }
+    return answer;
+  }
+
+
 };
 
-frame_pts Track(frame_pts& init, cv::Mat &img1, cv::Mat &img2);
+frame_pts Track(frame_pts& init, cv::Mat &img1, cv::Mat &img2, int fid, int cx, int cy);
 
 /**
  * @brief Inplace adds features from f2 to f1
@@ -30,5 +53,7 @@ void add_more_features(frame_pts &f1, frame_pts &f2);
  * @brief Compresses f1 and f2 to give compressed corr
  */
 corr compress(frame_pts &f1, frame_pts &f2);
+
+bool WithinCompressionRange(frame_pts &f1, frame_pts &f2);
 
 #endif
