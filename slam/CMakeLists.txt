@@ -53,7 +53,10 @@ add_library(helpers-cc src/triangulation.cc
                        src/essential_matrix_utils.cc
                        src/eight_point_fundamental_matrix.cc
                        src/correspondance.cc
-                       src/helpers.cc)
+                       src/helpers.cc
+                       src/tracking_helpers.cc)
+
+# add_library(tracking-helpers src/tracking_helpers.cc)
 
 add_library (dense-helpers-cc src/triangulate.cc
                               src/densehelpers.cc)
