@@ -21,7 +21,7 @@
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
 DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 100, "Max number of keyframes in a chunk");
+DEFINE_int32(chunks, 120, "Max number of keyframes in a chunk");
 DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
@@ -400,6 +400,10 @@ int main(int argc, char **argv)
       TwoViewInfo twoview_info;
       std::vector<int> inliers;
       if (GetEssentialRT(all_corr[i], twoview_info, inliers, options, focal)) {
+        if (not((inliers.size() > 0.8*all_corr[i].p1.size()) && (inliers.size() >100))) {
+          std::cout << "Removing pair for " << all_corr[i].frame_1 << "\t" << all_corr[i].frame_2 << "\n";
+          continue;
+        }
         rdata << all_corr[i].frame_1 << " " << all_corr[i].frame_2 << "\n";
         rdata << twoview_info.rotationmat_2(0,0) << " " << twoview_info.rotationmat_2(0,1) << " " << twoview_info.rotationmat_2(0,2) << " " <<
                  twoview_info.rotationmat_2(1,0) << " " << twoview_info.rotationmat_2(1,1) << " " << twoview_info.rotationmat_2(1,2) << " " <<
