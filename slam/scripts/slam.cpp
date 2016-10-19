@@ -82,7 +82,7 @@ int main(int argc, char **argv)
     std::cout << "\rProcessing frame " << framid <<std::flush;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
-      images[0] = newFrame;
+      newFrame.copyTo(images[0]);
       cx = newFrame.cols/2;
       cy = newFrame.rows/2;
       focal *= 2*cx;
@@ -112,7 +112,6 @@ int main(int argc, char **argv)
     assert(finalindex == framid-1);
     frame_pts last = Track(all_frame_pts[finalindex], images[finalindex], newFrame, framid, cx, cy);
     for (int i = finalindex -1; i>=initindex; i--) {
-      assert(false);
       frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
       add_more_features(last, temp_track);
     }
@@ -164,7 +163,7 @@ int main(int argc, char **argv)
       break;
   }
 
-  std::cout << "Starting Keyframe Generation\n";
+  std::cout << "\nStarting Keyframe Generation\n";
   // Correspondance compression.
   int corres_skip= FLAGS_keyframe;
   std::vector<std::vector<int> > Chunks;
@@ -261,8 +260,8 @@ int main(int argc, char **argv)
         edata << twoview_info.essential_mat(0,0) << " " << twoview_info.essential_mat(0,1) << " " << twoview_info.essential_mat(0,2) << " " <<
                  twoview_info.essential_mat(1,0) << " " << twoview_info.essential_mat(1,1) << " " << twoview_info.essential_mat(1,2) << " " <<
                  twoview_info.essential_mat(2,0) << " " << twoview_info.essential_mat(2,1) << " " << twoview_info.essential_mat(2,2) << "\n";
-        pdata << all_corr[i].frame_1 +1 - chunksize*ch << " " << all_corr[i].frame_2 +1 - chunksize*ch << " 1.00000 1.00000\n";
-        fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1 - chunksize*ch , all_corr[i].frame_2 - chunksize*ch , inliers.size());
+        pdata << all_corr[i].frame_1 +1 << " " << all_corr[i].frame_2 +1 << " 1.00000 1.00000\n";
+        fprintf(fp, "%d %d %ld\n", all_corr[i].frame_1, all_corr[i].frame_2, inliers.size());
         for (int j = 0; j<inliers.size(); j++) {
           int loc = inliers[j];
           int sftid = all_corr[i].unique_id[loc];
@@ -368,7 +367,7 @@ int main(int argc, char **argv)
                 << all_corr[i].p2[loc].y << "\n";
         }
       } else {
-        std::cerr << "Something bad still happened!!!!!!!!!!\n";
+        std::cerr << "Something bad still happened in intermediate!!!!!!!!!!\n";
       }
     }
     rdata.close();
