@@ -7,6 +7,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <unordered_map>
+#include <algorithm>
+#include <utility>
 #include "correspondance.h"
 
 struct img_pt {
@@ -21,6 +23,7 @@ struct img_pt {
 
 };
 
+bool compare_my(const std::pair<int, cv::Point2f> &p1, const std::pair<int, cv::Point2f> &p2);
 struct frame_pts {
   int frame_id;
   std::unordered_map<int, img_pt> features;
@@ -32,14 +35,19 @@ struct frame_pts {
 
   std::vector<cv::Point2f> get_vector(std::vector<int> &siftids) {
     std::vector<cv::Point2f> answer;
+    siftids.clear();
+    std::vector<std::pair<int, cv::Point2f> > tempv;
     for (auto it: features) {
-      answer.push_back(it.second.pt);
+      tempv.push_back(std::make_pair(it.first, it.second.pt));
+    }
+    std::sort(tempv.begin(), tempv.end(), compare_my);
+    for (auto it: tempv) {
+      answer.push_back(it.second);
       siftids.push_back(it.first);
     }
+    assert(siftids.size() == answer.size());
     return answer;
   }
-
-
 };
 
 frame_pts Track(frame_pts& init, cv::Mat &img1, cv::Mat &img2, int fid, int cx, int cy);

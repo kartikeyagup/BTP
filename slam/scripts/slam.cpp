@@ -112,6 +112,7 @@ int main(int argc, char **argv)
     assert(finalindex == framid-1);
     frame_pts last = Track(all_frame_pts[finalindex], images[finalindex], newFrame, framid, cx, cy);
     for (int i = finalindex -1; i>=initindex; i--) {
+      assert(images.find(i) != images.end());
       frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
       add_more_features(last, temp_track);
     }
@@ -140,9 +141,9 @@ int main(int argc, char **argv)
       // std::cout << "Generated mask\n";
       corners.clear();
       cv::goodFeaturesToTrack(newFrame,
-        corners, 
-        maxCorners, 
-        qualityLevel, 
+        corners,
+        maxCorners,
+        qualityLevel,
         minDistance,
         mask,
         blockSize,

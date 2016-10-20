@@ -1,6 +1,10 @@
 #include "tracking_helpers.h"
 #include <iostream>
 
+bool compare_my(const std::pair<int, cv::Point2f> &p1, const std::pair<int, cv::Point2f> &p2) {
+  return (p1.first >= p2.first);
+}
+
 frame_pts Track(frame_pts& init, cv::Mat &oldFrame, cv::Mat &newFrame, int fid,
   int cx, int cy) {
   frame_pts answer(fid);
