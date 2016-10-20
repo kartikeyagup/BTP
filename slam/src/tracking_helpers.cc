@@ -57,13 +57,19 @@ void add_more_features(frame_pts &f1, frame_pts &f2) {
 corr compress(frame_pts &f1, frame_pts &f2) {
   assert(f1.frame_id != f2.frame_id);
   corr answer(f1.frame_id, f2.frame_id);
-
+  std::vector<int> all_features;
   for (auto it: f2.features) {
-    if (f1.features.find(it.first) != f1.features.end()) {
-      answer.unique_id.push_back(it.first);
-      answer.p1.push_back(f1.features[it.first].pt);
-      answer.p2.push_back(f2.features[it.first].pt);
-      answer.col.push_back(f1.features[it.first].color);
+    all_features.push_back(it.first);
+  }
+
+  sort(all_features.begin(), all_features.end());
+
+  for (auto it: all_features) {
+    if (f1.features.find(it) != f1.features.end()) {
+      answer.unique_id.push_back(it);
+      answer.p1.push_back(f1.features[it].pt);
+      answer.p2.push_back(f2.features[it].pt);
+      answer.col.push_back(f1.features[it].color);
     }
   }
 

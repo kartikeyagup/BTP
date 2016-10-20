@@ -40,7 +40,7 @@ struct frame_pts {
     for (auto it: features) {
       tempv.push_back(std::make_pair(it.first, it.second.pt));
     }
-    std::sort(tempv.begin(), tempv.end(), compare_my);
+    // std::sort(tempv.begin(), tempv.end(), compare_my);
     for (auto it: tempv) {
       answer.push_back(it.second);
       siftids.push_back(it.first);

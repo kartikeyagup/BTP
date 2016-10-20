@@ -28,6 +28,8 @@ DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
 DEFINE_int32(min_corners, 50, "Minimum number of points in image below which more will be added");
 DEFINE_int32(loop_closure_size, 1, "Number of frames over which loop closure is applied");
+DEFINE_int32(kf_overlap, 10, "Number of keyframes to be overlapped");
+
 
 float focal = 1134.0/1280;
 int cx = 640;
@@ -62,6 +64,7 @@ int main(int argc, char **argv)
   std::vector<int> useless;
   std::vector<std::vector<int> > fileids;
   std::vector<std::unordered_map<int, bool> > all_files;
+  std::unordered_map<int, bool> all_file_ids;
   int siftlatest=0;
   int initindex(0), finalindex(0);
   
@@ -79,14 +82,15 @@ int main(int argc, char **argv)
       undistort(rawFrame);
     }
     // if (framid%10 == 0)
-    std::cout << "\rProcessing frame " << framid <<std::flush;
+    if (framid>0)
+      std::cout << "\rProcessing frame " << framid << " with points: " << all_frame_pts.rbegin()->features.size() << std::endl;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       newFrame.copyTo(images[0]);
       cx = newFrame.cols/2;
       cy = newFrame.rows/2;
       focal *= 2*cx;
-      std::cout << "Cx is: " << cx << "\n";
+      std::cout << "\nCx is: " << cx << "\n";
       std::cout << "Cy is: " << cy << "\n";
       std::cout << "Focal is: " << focal << "\n";
       cv::goodFeaturesToTrack(newFrame,
@@ -195,6 +199,8 @@ int main(int argc, char **argv)
       fileids[Chunks.size()-1].push_back(i+j);
     all_files[Chunks.size()-1][i] = true;
     all_files[Chunks.size()-1][i+j] = true;
+    all_file_ids[i] = true;
+    all_file_ids[i+j] = true;
 
     // if (FLAGS_corres) {
     //   ShowCorres(FLAGS_dirname, compressed);
@@ -210,6 +216,10 @@ int main(int argc, char **argv)
 
     fid++;
     i=i+j;
+    if (fid == chunksize) {
+      fid=0;
+      i = Chunks[Chunks.size()-1][chunksize - FLAGS_kf_overlap];
+    }
   }
 
   std::cout << "Made "<< keyframe_ids.size() << " keyframes\n";
@@ -292,9 +302,9 @@ int main(int argc, char **argv)
       listfocal << "img_" << fileids[ch][i] << ".jpg" << " 0 " << focal << "\n";
       list_focal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
     }
-    for (int i=0; i<fileids[ch].size() -1; i++) {
-      listfocalglobal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
-    }
+    // for (int i=0; i<fileids[ch].size() -1; i++) {
+    //   listfocalglobal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
+    // }
     int total_size = 0;
     int count = 0;
     std::vector<int> counts;
@@ -374,7 +384,15 @@ int main(int argc, char **argv)
     rdata.close();
   }
 
-  listfocalglobal << "img_" << *((*fileids.rbegin()).rbegin()) << ".jpg " << focal << "\n";
+  std::vector<int> temp;
+  for (auto it: all_file_ids) {
+    temp.push_back(it.first);
+  }
+  std::sort(temp.begin(), temp.end());
+  for (auto it: temp){
+    listfocalglobal << "img_" << it << ".jpg " << focal << "\n"; 
+  }
+  // listfocalglobal << "img_" << *((*fileids.rbegin()).rbegin()) << ".jpg " << focal << "\n";
   listfocalglobal.close();
   inifile.close();
   return 0;
