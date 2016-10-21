@@ -32,10 +32,11 @@ imgcorr ChangeCamId(imgcorr inp, int x) {
   return inp;
 }
 
-imgcorr fix_corr(imgcorr inp, int offset) {
+imgcorr fix_corr(imgcorr inp, std::unordered_map<int, int> &offset) {
   imgcorr result;
 
-  result.imgid = inp.imgid + offset;
+  assert(offset.find(inp.imgid)!=offset.end());
+  result.imgid = offset[inp.imgid];
   result.siftid = inp.siftid;
   result.img_location = inp.img_location;
 
@@ -254,86 +255,6 @@ struct nvm_file {
   }
 };
 
-float get_best_scaling_factor(nvm_file &f1, nvm_file &f2) {
-  std::unordered_map<int, Eigen::Vector3f> m1;
-  for (auto it: f1.corr_data) {
-    m1[it.corr[0].siftid] = it.point_3d;
-  }
-  std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f> > points_common;
-
-  for (auto it: f2.corr_data) {
-    if (m1.find(it.corr[0].siftid) != m1.end()) {
-      // std::cout << it.corr[0].siftid << "\n";
-      // std::cout << m1[it.corr[0].siftid] << "\n";
-      points_common.push_back(std::make_pair(m1[it.corr[0].siftid], it.point_3d));
-    }
-  }
-  srand(time(NULL));
-  float d1(0), d2(0);
-  int limt = points_common.size();
-  for (int i=0; i<500; i++) {
-    int p1 = rand()%limt;
-    int p2 = rand()%limt;
-    // std::cout << p1 << "\t" << p2 <<"\n";
-    // std::cout << points_common[p1].first << "\t" << points_common[p2].first << "\n";
-    d1 += (points_common[p1].first - points_common[p2].first).norm();
-    d2 += (points_common[p1].second - points_common[p2].second).norm();
-  }
-  std::cerr << "Number of common points " << points_common.size() << "\n";
-  std::cerr << d1 << "\t" << d2 << "\t" << d1/d2 << "\n";
-  return d1/d2;
-}
-
-void get_best_translation(nvm_file &f1, nvm_file &f2) {
-  std::unordered_map<int, Eigen::Vector3f> m1;
-  for (auto it: f1.corr_data) {
-    m1[it.corr[0].siftid] = it.point_3d;
-  }
-  std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f> > points_common;
-
-  for (auto it: f2.corr_data) {
-    if (m1.find(it.corr[0].siftid) != m1.end()) {
-      // std::cout << it.corr[0].siftid << "\n";
-      // std::cout << m1[it.corr[0].siftid] << "\n";
-      points_common.push_back(std::make_pair(m1[it.corr[0].siftid], it.point_3d));
-    }
-  }
-
-  Eigen::Vector3f answer1, answer2;
-  answer1.setZero();
-  answer2.setZero();
-
-  for (auto it: points_common) {
-    answer1 += it.first;
-    answer2 += it.second;
-  }
-  answer1(0,0) /= points_common.size();
-  answer1(1,0) /= points_common.size();
-  answer1(2,0) /= points_common.size();
-
-  answer2(0,0) /= points_common.size();
-  answer2(1,0) /= points_common.size();
-  answer2(2,0) /= points_common.size();
-
-  std::cerr << answer1 << "\n";
-  std::cerr << answer2 << "\n";
-
-  for (Corr3D &it: f1.corr_data) {
-    it.point_3d -= answer1;
-    // it.color.x=255;
-    // it.color.y=0;
-    // it.color.z=0;
-  }
-  for (Corr3D &it: f2.corr_data) {
-    it.point_3d -= answer2;
-    // it.color.x=0;
-    // it.color.y=0;
-    // it.color.z=255;
-  }
-  // std::cout << answer << "\n";
-  // return answer;
-}
-
 void GetBestRST(nvm_file &f1, nvm_file& f2) {
   std::unordered_map<int, Eigen::Vector3f> m1;
   for (auto it: f1.corr_data) {
@@ -421,19 +342,42 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
   }
 }
 
+void merge_corr(std::vector<imgcorr> &init, imgcorr newp) {
+  bool found= false;
+  for (int i=0; i<init.size(); i++) {
+    if (init[i].imgid == newp.imgid) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) {
+    init.push_back(newp);
+  }
+}
+
 nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
   nvm_file output;
   assert(f1.description == f2.description);
   output.description = f1.description;
+  std::unordered_map<std::string, int> cam_mapping;
+
   for (int i=0; i<f1.kf_data.size(); i++) {
     output.kf_data.push_back(f1.kf_data[i]);
+    cam_mapping[f1.kf_data[i].filename] = i;
   }
-  int offset = 0;
-  if (f1.kf_data.rbegin()->filename == f2.kf_data.begin()->filename) {
-    offset = 1;
-  }
-  for (int i=offset; i<f2.kf_data.size(); i++) {
-    output.kf_data.push_back(f2.kf_data[i]);
+
+  int offset = f1.kf_data.size();
+  std::unordered_map<int, int> f2mapping;
+  for (int i=0; i<f2.kf_data.size(); i++) {
+    if (cam_mapping.find(f2.kf_data[i].filename) ==cam_mapping.end()) {
+      // New camera
+      output.kf_data.push_back(f2.kf_data[i]);
+      cam_mapping[f2.kf_data[i].filename] = offset;
+      offset++;
+    } else {
+      std::cout << "Found an old camera " << f2.kf_data[i].filename << "\n";
+    }
+    f2mapping[i] = cam_mapping[f2.kf_data[i].filename];
   }
 
   std::unordered_map<int, Corr3D> all_mappings;
@@ -445,17 +389,15 @@ nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
   for (int i=0; i<f2.corr_data.size(); i++) {
     int sftid = f2.corr_data[i].corr[0].siftid;
     if (all_mappings.find(sftid) == all_mappings.end()) {
-        all_mappings[sftid].point_3d = f2.corr_data[i].point_3d;
-        all_mappings[sftid].color = f2.corr_data[i].color;  
+      all_mappings[sftid].point_3d = f2.corr_data[i].point_3d;
+      all_mappings[sftid].color = f2.corr_data[i].color;  
       for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
-        all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
+        all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], f2mapping));
       }
     } else {
       // sift id existed
       for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
-        if (f2.corr_data[i].corr[j].imgid>0) {
-          all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
-        } 
+        merge_corr(all_mappings[sftid].corr, fix_corr(f2.corr_data[i].corr[j], f2mapping));
       }
     }
   }
