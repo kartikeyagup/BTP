@@ -271,6 +271,16 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
     }
   }
 
+  std::unordered_map<std::string, Eigen::Vector3f> m2;
+  for (auto it: f1.kf_data) {
+    m2[it.filename] = - it.rotation.transpose() * it.translation;
+  }
+
+  for (auto it: f2.kf_data) {
+    if (m2.find(it.filename) != m2.end())
+      points_common.push_back(std::make_pair(m2[it.filename],  - it.rotation.transpose() * it.translation));
+  }
+
   std::cout << "Number of points " << points_common.size() << "\n";
 
   Eigen::Vector3f answer1, answer2;

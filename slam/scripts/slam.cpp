@@ -30,7 +30,6 @@ DEFINE_int32(min_corners, 50, "Minimum number of points in image below which mor
 DEFINE_int32(loop_closure_size, 1, "Number of frames over which loop closure is applied");
 DEFINE_int32(kf_overlap, 10, "Number of keyframes to be overlapped");
 
-
 float focal = 1134.0/1280;
 int cx = 640;
 int cy = 360;
@@ -83,7 +82,7 @@ int main(int argc, char **argv)
     }
     // if (framid%10 == 0)
     if (framid>0)
-      std::cout << "\rProcessing frame " << framid << " with points: " << all_frame_pts.rbegin()->features.size() << std::endl;
+      std::cout << "\rProcessing frame " << framid << " with points: " << all_frame_pts.rbegin()->features.size() << std::flush ;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       newFrame.copyTo(images[0]);
