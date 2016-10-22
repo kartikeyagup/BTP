@@ -4,10 +4,10 @@
 #include <gflags/gflags.h>
 #include <string>
 
-DEFINE_string(path1, "btp/batch1/", "Path to dir of 1st nvm file");
-DEFINE_string(path2, "btp/batch2/", "Path to dir of 2nd nvm file");
+DEFINE_string(path1, "btp/combined01/", "Path to dir of 1st nvm file");
+DEFINE_string(path2, "btp/combined23/", "Path to dir of 2nd nvm file");
 DEFINE_string(path_data, "data2/", "Path where lst focal global is present");
-DEFINE_string(output_dir, "btp/", "Output combined ply file");
+DEFINE_string(output_dir, "btp/combined0123/", "Output combined ply file");
 
 std::vector<std::string> read_focal_file(std::string path) {
   std::ifstream inp;

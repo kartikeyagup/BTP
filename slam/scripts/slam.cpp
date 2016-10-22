@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <stdio.h>
@@ -66,7 +67,7 @@ int main(int argc, char **argv)
   std::unordered_map<int, bool> all_file_ids;
   int siftlatest=0;
   int initindex(0), finalindex(0);
-  
+
   VerifyTwoViewMatchesOptions options;
   options.bundle_adjustment = false;
   options.min_num_inlier_matches = 10;
@@ -125,23 +126,19 @@ int main(int argc, char **argv)
     finalindex = framid;
     // Delete and add the frame to the images
     if (finalindex-initindex >= FLAGS_loop_closure_size) {
-      // std::cerr << "Deleting image index " << initindex << "\n";
       images.erase(initindex);
       initindex++;
     }
 
     cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
     corners = all_frame_pts.rbegin()->get_vector(useless);
-    // std::cout << framid << " : " << corners.size() << "\n";
     framid++;
     
     if ((framid %5 == 0) || (all_frame_pts.rbegin()->features.size() < FLAGS_min_corners)) {
-      // std::cout << "Adding more sift points\n";
       mask = cv::Mat::ones(newFrame.size(), CV_8UC1);
       for (int i=0; i<corners.size(); i++) {
         cv::circle(mask, corners[i], 3, cv::Scalar(0), -1);
       }
-      // std::cout << "Generated mask\n";
       corners.clear();
       cv::goodFeaturesToTrack(newFrame,
         corners,
