@@ -22,16 +22,18 @@
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
 DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 100, "Max number of keyframes in a chunk");
+DEFINE_int32(chunks, 71, "Max number of keyframes in a chunk");
 DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
 DEFINE_int32(min_corners, 50, "Minimum number of points in image below which more will be added");
-DEFINE_int32(loop_closure_size, 1, "Number of frames over which loop closure is applied");
+DEFINE_int32(loop_closure_size, 5, "Number of key frames over which loop closure is applied");
 DEFINE_int32(kf_overlap, 10, "Number of keyframes to be overlapped");
 
-float focal = 1134.0/1280;
+// float focal = 1134.0/1280; // gopro3
+// float focal = 1170.0/1280; // gopro4
+float focal = 809.0/1280.0; // pointgrey
 int cx = 640;
 int cy = 360;
 constexpr int windows_size = 5;
@@ -58,35 +60,47 @@ int main(int argc, char **argv)
   double k = 0.04;
   std::vector<frame_pts> all_frame_pts;
   std::unordered_map<int, cv::Mat> images;
+  std::unordered_map<int, cv::Mat> kf_images;
 
   cv::Mat newFrame, mask, rawFrame;
   std::vector<cv::Point2f> corners;
   std::vector<int> useless;
-  std::vector<std::vector<int> > fileids;
-  std::vector<std::unordered_map<int, bool> > all_files;
-  std::unordered_map<int, bool> all_file_ids;
   int siftlatest=0;
   int initindex(0), finalindex(0);
+  int kfinitindex(0), kfinalindex(0);
+  std::vector<frame_pts> keyFrames;
+  int prevKeyFrame = 0;
 
   VerifyTwoViewMatchesOptions options;
   options.bundle_adjustment = false;
   options.min_num_inlier_matches = 10;
   options.estimate_twoview_info_options.max_sampson_error_pixels = 2.25;
+  int ct1=0;
 
   while (true) {
     cap.read(rawFrame);
     if (rawFrame.empty()) {
+      ct1++;
+      if (ct1<25)
+        continue;
+      if (all_frame_pts.rbegin()->frame_id != keyFrames.rbegin()->frame_id) {
+        cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
+        keyFrames.push_back(*all_frame_pts.rbegin());
+      }
       break;
     }
+    ct1 =0;
     if (FLAGS_undistort) {
       undistort(rawFrame);
     }
-    // if (framid%10 == 0)
     if (framid>0)
-      std::cout << "\rProcessing frame " << framid << " with points: " << all_frame_pts.rbegin()->features.size() << std::flush ;
+      std::cout << "\rProcessing frame " << framid << " with points: " 
+                << all_frame_pts.rbegin()->features.size() << ", Number of keyframes: "
+                << keyFrames.size() << std::flush ;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       newFrame.copyTo(images[0]);
+      newFrame.copyTo(kf_images[0]);
       cx = newFrame.cols/2;
       cy = newFrame.rows/2;
       focal *= 2*cx;
@@ -94,9 +108,9 @@ int main(int argc, char **argv)
       std::cout << "Cy is: " << cy << "\n";
       std::cout << "Focal is: " << focal << "\n";
       cv::goodFeaturesToTrack(newFrame,
-        corners, 
-        maxCorners, 
-        qualityLevel, 
+        corners,
+        maxCorners,
+        qualityLevel,
         minDistance,
         mask,
         blockSize,
@@ -108,6 +122,7 @@ int main(int argc, char **argv)
         f0.features[i] = img_pt(corners[i], rawFrame.at<cv::Vec3b>(corners[i]));
       }
       all_frame_pts.push_back(f0);
+      keyFrames.push_back(f0);
       siftlatest = siftlatest+corners.size();
       cv::imwrite(FLAGS_dirname + "/img_" + std::to_string(framid) + ".jpg", rawFrame);
       framid++;
@@ -115,22 +130,39 @@ int main(int argc, char **argv)
     }
     assert(finalindex == framid-1);
     frame_pts last = Track(all_frame_pts[finalindex], images[finalindex], newFrame, framid, cx, cy);
-    for (int i = finalindex -1; i>=initindex; i--) {
-      assert(images.find(i) != images.end());
-      frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
+    for (int i=kfinalindex; i>=kfinitindex; i--) {
+      assert(kf_images.find(i) != kf_images.end());
+      frame_pts temp_track = Track(keyFrames[i], kf_images[i], newFrame, framid, cx, cy);
       add_more_features(last, temp_track);
+    }
+    // for (int i = finalindex -1; i>=initindex; i--) {
+    //   assert(images.find(i) != images.end());
+    //   frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
+    //   add_more_features(last, temp_track);
+    // }
+    
+    if (newKeyFrame(*keyFrames.rbegin(), last, FLAGS_keyframe)) {
+      cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
+      keyFrames.push_back(last);
+      kfinalindex++;
+      newFrame.copyTo(kf_images[kfinalindex]);
+      
+      if (kfinalindex - kfinitindex >= FLAGS_loop_closure_size) {
+        assert(kf_images.find(kfinitindex) != kf_images.end());
+        kf_images.erase(kfinitindex);
+        kfinitindex++;
+      }
     }
     all_frame_pts.push_back(last);
 
     newFrame.copyTo(images[framid]);
     finalindex = framid;
     // Delete and add the frame to the images
-    if (finalindex-initindex >= FLAGS_loop_closure_size) {
+    if (finalindex-initindex >= 1) {
       images.erase(initindex);
       initindex++;
     }
 
-    cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
     corners = all_frame_pts.rbegin()->get_vector(useless);
     framid++;
     
@@ -160,13 +192,11 @@ int main(int argc, char **argv)
       cv::circle(rawFrame, corners[i], 4, cv::Scalar(0), -1);
     }
     cv::imshow("new", rawFrame);
-    if (cv::waitKey(1) == 27) 
+    if (cv::waitKey(100) == 27) 
       break;
   }
 
-  std::cout << "\nStarting Keyframe Generation\n";
-  // Correspondance compression.
-  int corres_skip= FLAGS_keyframe;
+  std::cout << "\nStarting Chunk Generation\n";
   std::vector<std::vector<int> > Chunks;
   std::vector<std::vector<int> > Chunks_Intermediate;
   Chunks_Intermediate.push_back(std::vector<int> ());
@@ -174,51 +204,28 @@ int main(int argc, char **argv)
   std::vector<corr> compressed_all;
   int fid = 0;
   int chi = 1;
-  std::vector<int> keyframe_ids = {0};
-  for (int i=0; i<all_frame_pts.size()-1;) {
+  for (int i=0; i<keyFrames.size();) {
     if (fid%chunksize==0) {
-      Chunks.push_back(std::vector<int> {i});
-      all_files.push_back(std::unordered_map<int, bool> ());
-      fileids.push_back(std::vector<int> ());
+      Chunks.push_back(std::vector<int> {});
     }
-    int j;
-    for (j=1; j<corres_skip && (i+j<all_frame_pts.size()-1); j++) {
-      if (!WithinCompressionRange(all_frame_pts[i], all_frame_pts[i+j])) {
-        break;
-      }
-    }
-    keyframe_ids.push_back(i+j);
-    // i is keyframe init, j is keyframe end
-    if (all_files[Chunks.size()-1].find(i)==all_files[Chunks.size()-1].end())
-      fileids[Chunks.size()-1].push_back(i);
-    if (all_files[Chunks.size()-1].find(i+j)==all_files[Chunks.size()-1].end())
-      fileids[Chunks.size()-1].push_back(i+j);
-    all_files[Chunks.size()-1][i] = true;
-    all_files[Chunks.size()-1][i+j] = true;
-    all_file_ids[i] = true;
-    all_file_ids[i+j] = true;
-
-    // if (FLAGS_corres) {
-    //   ShowCorres(FLAGS_dirname, compressed);
-    // }
 
     if ((fid>chi*chunksize - windows_size) and (fid<chi*chunksize + windows_size)) {
-      Chunks_Intermediate[Chunks_Intermediate.size()-1].push_back(i+j);
+      Chunks_Intermediate[Chunks_Intermediate.size()-1].push_back(i);
     } else if (fid == chi*chunksize+ windows_size) {
       chi++;
-      Chunks_Intermediate.push_back(std::vector<int> {i});
+      Chunks_Intermediate.push_back(std::vector<int> {});
     }
-    Chunks[Chunks.size()-1].push_back(i+j);
+    Chunks[Chunks.size()-1].push_back(i);
 
     fid++;
-    i=i+j;
+    i++;
     if (fid == chunksize) {
       fid=0;
-      i = Chunks[Chunks.size()-1][chunksize - FLAGS_kf_overlap];
+      i -= FLAGS_kf_overlap;
     }
   }
 
-  std::cout << "Made "<< keyframe_ids.size() << " keyframes\n";
+  std::cout << "Divided " << keyFrames.size() << " keyframes to " << Chunks.size() << " chunks\n";
 
   std::ofstream listfocalglobal, inifile;
   listfocalglobal.open(FLAGS_dirname + "/list_focal.txt");
@@ -242,7 +249,7 @@ int main(int argc, char **argv)
     std::vector<corr> new_compressed;
     for (int i=0; i<all_corr_ids.size(); i++) {
       for (int j=1; j <= FLAGS_overlap && (i+j <all_corr_ids.size()); j++) {
-        corr compressed = compress(all_frame_pts[all_corr_ids[i]], all_frame_pts[all_corr_ids[i+j]]);
+        corr compressed = compress(keyFrames[all_corr_ids[i]], keyFrames[all_corr_ids[i+j]]);
         compressed.frame_1 = i;
         compressed.frame_2 = i+j;
         ChangeCenterSubtracted(compressed, cx, cy);
@@ -255,7 +262,6 @@ int main(int argc, char **argv)
     std::cout << "Done with making a batch\n";
     numoutmatches = 0;
     for (int i=0; i<all_corr.size(); i++) {
-      // std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
       TwoViewInfo twoview_info;
       std::vector<int> inliers;
       if (GetEssentialRT(all_corr[i], twoview_info, inliers, options, focal)) {
@@ -294,13 +300,10 @@ int main(int argc, char **argv)
         std::cerr << "Something bad still happened!!!!!!!!!!\n";
       }
     }
-    for (int i=0; i<fileids[ch].size(); i++) {
-      listfocal << "img_" << fileids[ch][i] << ".jpg" << " 0 " << focal << "\n";
-      list_focal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
+    for (int i=0; i<all_corr_ids.size(); i++) {
+      listfocal << "img_" << keyFrames[all_corr_ids[i]].frame_id << ".jpg" << " 0 " << focal << "\n";
+      list_focal << "img_" << keyFrames[all_corr_ids[i]].frame_id << ".jpg " << focal << "\n";
     }
-    // for (int i=0; i<fileids[ch].size() -1; i++) {
-    //   listfocalglobal << "img_" << fileids[ch][i] << ".jpg " << focal << "\n";
-    // }
     int total_size = 0;
     int count = 0;
     std::vector<int> counts;
@@ -334,7 +337,7 @@ int main(int argc, char **argv)
     std::vector<corr> new_compressed;
     for (int i=0; i<all_corr_ids.size(); i++) {
       for (int j=1; i+j<all_corr_ids.size(); j++) {
-        corr compressed = compress(all_frame_pts[all_corr_ids[i]], all_frame_pts[all_corr_ids[i+j]]);
+        corr compressed = compress(keyFrames[all_corr_ids[i]], keyFrames[all_corr_ids[i+j]]);
         ChangeCenterSubtracted(compressed, cx, cy);
         new_compressed.push_back(compressed);
       }
@@ -343,7 +346,6 @@ int main(int argc, char **argv)
     std::cout << "Done with Generating intermediate file\n";
     numoutmatches = 0;
     for (int i=0; i<all_corr.size(); i++) {
-      // std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
       TwoViewInfo twoview_info;
       std::vector<int> inliers;
       if (GetEssentialRT(all_corr[i], twoview_info, inliers, options, focal)) {
@@ -380,15 +382,9 @@ int main(int argc, char **argv)
     rdata.close();
   }
 
-  std::vector<int> temp;
-  for (auto it: all_file_ids) {
-    temp.push_back(it.first);
+  for (auto it: keyFrames){
+    listfocalglobal << "img_" << it.frame_id << ".jpg " << focal << "\n"; 
   }
-  std::sort(temp.begin(), temp.end());
-  for (auto it: temp){
-    listfocalglobal << "img_" << it << ".jpg " << focal << "\n"; 
-  }
-  // listfocalglobal << "img_" << *((*fileids.rbegin()).rbegin()) << ".jpg " << focal << "\n";
   listfocalglobal.close();
   inifile.close();
   return 0;

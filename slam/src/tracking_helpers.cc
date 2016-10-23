@@ -92,3 +92,8 @@ bool WithinCompressionRange(frame_pts &f1, frame_pts&f2) {
   float val = res.dot(res);
   return (val < 500);
 }
+
+bool newKeyFrame(frame_pts &f1, frame_pts &f2, int lim) {
+  return (f2.frame_id - f1.frame_id >= lim) || (!WithinCompressionRange(f1, f2));
+}
+

@@ -64,4 +64,6 @@ corr compress(frame_pts &f1, frame_pts &f2);
 
 bool WithinCompressionRange(frame_pts &f1, frame_pts &f2);
 
+bool newKeyFrame(frame_pts &f1, frame_pts &f2, int lim);
+
 #endif
