@@ -12,7 +12,6 @@
 #include <unordered_set>
 #include <stdio.h>
 #include <stdlib.h>
-#include "tracking_helpers.h"
 #include "sift_processing.h"
 #include "helpers.h"
 #include "gflags/gflags.h"
