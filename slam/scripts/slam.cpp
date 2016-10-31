@@ -51,7 +51,6 @@ int main(int argc, char **argv)
   
   int numoutmatches;
   int framid = 0;
-  int prevframe = 0;
   int maxCorners = 10000;
   double qualityLevel = 0.01;
   double minDistance = 2;
@@ -62,7 +61,7 @@ int main(int argc, char **argv)
   std::unordered_map<int, cv::Mat> images;
   std::unordered_map<int, cv::Mat> kf_images;
 
-  cv::Mat newFrame, mask, rawFrame;
+  cv::Mat newFrame, mask, rawFrame, lastFrame;
   std::vector<cv::Point2f> corners;
   std::vector<int> useless;
   int siftlatest=0;
@@ -84,19 +83,21 @@ int main(int argc, char **argv)
       if (ct1<25)
         continue;
       if (all_frame_pts.rbegin()->frame_id != keyFrames.rbegin()->frame_id) {
-        cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
+        cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", lastFrame);
         keyFrames.push_back(*all_frame_pts.rbegin());
       }
       break;
     }
     ct1 =0;
+    rawFrame.copyTo(lastFrame);
     if (FLAGS_undistort) {
       undistort(rawFrame);
     }
-    if (framid>0)
+    if (framid>0) {
       std::cout << "\rProcessing frame " << framid << " with points: " 
                 << all_frame_pts.rbegin()->features.size() << ", Number of keyframes: "
                 << keyFrames.size() << std::flush ;
+    }
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       newFrame.copyTo(images[0]);
@@ -201,7 +202,6 @@ int main(int argc, char **argv)
   std::vector<std::vector<int> > Chunks_Intermediate;
   Chunks_Intermediate.push_back(std::vector<int> ());
   int chunksize = FLAGS_chunks;
-  std::vector<corr> compressed_all;
   int fid = 0;
   int chi = 1;
   for (int i=0; i<keyFrames.size();) {
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 
     fid++;
     i++;
-    if (fid == chunksize) {
+    if (fid == chunksize ) {
       fid=0;
       i -= FLAGS_kf_overlap;
     }

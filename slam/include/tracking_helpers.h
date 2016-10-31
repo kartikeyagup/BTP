@@ -24,6 +24,7 @@ struct img_pt {
 };
 
 bool compare_my(const std::pair<int, cv::Point2f> &p1, const std::pair<int, cv::Point2f> &p2);
+
 struct frame_pts {
   int frame_id;
   std::unordered_map<int, img_pt> features;
