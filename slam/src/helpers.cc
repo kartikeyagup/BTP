@@ -3,12 +3,12 @@
 void undistort(cv::Mat &img) {
   cv::Mat temp = img.clone();
   cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
-  cameraMatrix.at<double>(0, 0) = 1134;
+  cameraMatrix.at<double>(0, 0) = 1134*1.5;
   cameraMatrix.at<double>(0, 1) = 0;
-  cameraMatrix.at<double>(0, 2) = 645;
+  cameraMatrix.at<double>(0, 2) = 645*1.5;
   cameraMatrix.at<double>(1, 0) = 0;
-  cameraMatrix.at<double>(1, 1) = 1126;
-  cameraMatrix.at<double>(1, 2) = 364;
+  cameraMatrix.at<double>(1, 1) = 1126*1.5;
+  cameraMatrix.at<double>(1, 2) = 364*1.5;
   cameraMatrix.at<double>(2, 0) = 0;
   cameraMatrix.at<double>(2, 1) = 0;
   cameraMatrix.at<double>(2, 2) = 1;

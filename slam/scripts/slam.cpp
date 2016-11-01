@@ -22,18 +22,18 @@
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
 DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 71, "Max number of keyframes in a chunk");
+DEFINE_int32(chunks, 101, "Max number of keyframes in a chunk");
 DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
 DEFINE_int32(min_corners, 50, "Minimum number of points in image below which more will be added");
-DEFINE_int32(loop_closure_size, 5, "Number of key frames over which loop closure is applied");
-DEFINE_int32(kf_overlap, 10, "Number of keyframes to be overlapped");
+DEFINE_int32(loop_closure_size, 50, "Number of key frames over which loop closure is applied");
+DEFINE_int32(kf_overlap, 1, "Number of keyframes to be overlapped");
 
-// float focal = 1134.0/1280; // gopro3
+float focal = 1134.0/1280; // gopro3
 // float focal = 1170.0/1280; // gopro4
-float focal = 809.0/1280.0; // pointgrey
+// float focal = 809.0/1280.0; // pointgrey
 int cx = 640;
 int cy = 360;
 constexpr int windows_size = 5;
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
       if (ct1<25)
         continue;
       if (all_frame_pts.rbegin()->frame_id != keyFrames.rbegin()->frame_id) {
-        cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", lastFrame);
+        cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(all_frame_pts.rbegin()->frame_id)+".jpg", lastFrame);
         keyFrames.push_back(*all_frame_pts.rbegin());
       }
       break;
@@ -136,11 +136,12 @@ int main(int argc, char **argv)
       frame_pts temp_track = Track(keyFrames[i], kf_images[i], newFrame, framid, cx, cy);
       add_more_features(last, temp_track);
     }
-    // for (int i = finalindex -1; i>=initindex; i--) {
-    //   assert(images.find(i) != images.end());
-    //   frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
-    //   add_more_features(last, temp_track);
-    // }
+
+    for (int i = finalindex -1; i>=initindex; i--) {
+      assert(images.find(i) != images.end());
+      frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
+      add_more_features(last, temp_track);
+    }
     
     if (newKeyFrame(*keyFrames.rbegin(), last, FLAGS_keyframe)) {
       cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
     newFrame.copyTo(images[framid]);
     finalindex = framid;
     // Delete and add the frame to the images
-    if (finalindex-initindex >= 1) {
+    if (finalindex-initindex >= FLAGS_loop_closure_size) {
       images.erase(initindex);
       initindex++;
     }
