@@ -27,7 +27,7 @@ DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
-DEFINE_int32(min_corners, 50, "Minimum number of points in image below which more will be added");
+DEFINE_int32(min_corners, 5000, "Minimum number of points in image below which more will be added");
 DEFINE_int32(loop_closure_size, 50, "Number of key frames over which loop closure is applied");
 DEFINE_int32(kf_overlap, 1, "Number of keyframes to be overlapped");
 
@@ -161,6 +161,7 @@ int main(int argc, char **argv)
     finalindex = framid;
     // Delete and add the frame to the images
     if (finalindex-initindex >= FLAGS_loop_closure_size) {
+      assert(images.find(initindex) != images.end());
       images.erase(initindex);
       initindex++;
     }
