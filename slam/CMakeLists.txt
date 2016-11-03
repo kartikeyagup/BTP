@@ -19,6 +19,26 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 #########################################################
+# FIND GLUT
+#########################################################
+find_package(GLUT REQUIRED)
+include_directories(${GLUT_INCLUDE_DIRS})
+link_directories(${GLUT_LIBRARY_DIRS})
+add_definitions(${GLUT_DEFINITIONS})
+if(NOT GLUT_FOUND)
+    message(ERROR " GLUT not found!")
+endif(NOT GLUT_FOUND)
+#########################################################
+# FIND OPENGL
+#########################################################
+find_package(OpenGL REQUIRED)
+include_directories(${OpenGL_INCLUDE_DIRS})
+link_directories(${OpenGL_LIBRARY_DIRS})
+add_definitions(${OpenGL_DEFINITIONS})
+if(NOT OPENGL_FOUND)
+    message(ERROR " OPENGL not found!")
+endif(NOT OPENGL_FOUND)
+#########################################################
 # FIND OPENCV
 #########################################################
 find_package(OpenCV REQUIRED)
@@ -77,6 +97,8 @@ add_executable(corres scripts/corres_new.cpp)
 
 add_executable(merge scripts/merge_pt_cloud.cpp)
 
+add_executable(opengl scripts/opengl_view.cpp)
+
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
                            glog
@@ -103,3 +125,10 @@ target_link_libraries(corres ${OpenCV_LIBS})
 target_link_libraries(merge ${OpenCV_LIBS}
                              gflags
                              dense-helpers-cc)
+
+target_link_libraries(opengl ${OpenCV_LIBS}
+			     ${OPENGL_LIBRARIES} 
+                             ${GLUT_LIBRARY}
+                             gflags
+                             dense-helpers-cc)
+
