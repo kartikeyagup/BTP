@@ -37,13 +37,8 @@ struct frame_pts {
   std::vector<cv::Point2f> get_vector(std::vector<int> &siftids) {
     std::vector<cv::Point2f> answer;
     siftids.clear();
-    std::vector<std::pair<int, cv::Point2f> > tempv;
     for (auto it: features) {
-      tempv.push_back(std::make_pair(it.first, it.second.pt));
-    }
-    // std::sort(tempv.begin(), tempv.end(), compare_my);
-    for (auto it: tempv) {
-      answer.push_back(it.second);
+      answer.push_back(it.second.pt);
       siftids.push_back(it.first);
     }
     assert(siftids.size() == answer.size());

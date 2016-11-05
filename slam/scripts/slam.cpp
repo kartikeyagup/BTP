@@ -27,8 +27,8 @@ DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
-DEFINE_int32(min_corners, 5000, "Minimum number of points in image below which more will be added");
-DEFINE_int32(loop_closure_size, 50, "Number of key frames over which loop closure is applied");
+DEFINE_int32(min_corners, 10000, "Minimum number of points in image below which more will be added");
+DEFINE_int32(loop_closure_size, 10, "Number of key frames over which loop closure is applied");
 DEFINE_int32(kf_overlap, 1, "Number of keyframes to be overlapped");
 
 float focal = 1134.0/1280; // gopro3
@@ -51,10 +51,10 @@ int main(int argc, char **argv)
   
   int numoutmatches;
   int framid = 0;
-  int maxCorners = 10000;
+  int maxCorners = 100000;
   double qualityLevel = 0.01;
   double minDistance = 2;
-  int blockSize = 7;
+  int blockSize = 5;
   bool useHarrisDetector = false;
   double k = 0.04;
   std::vector<frame_pts> all_frame_pts;
@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     if (framid>0) {
       std::cout << "\rProcessing frame " << framid << " with points: " 
                 << all_frame_pts.rbegin()->features.size() << ", Number of keyframes: "
-                << keyFrames.size() << std::flush ;
+                << keyFrames.size();
     }
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
@@ -131,17 +131,22 @@ int main(int argc, char **argv)
     }
     assert(finalindex == framid-1);
     frame_pts last = Track(all_frame_pts[finalindex], images[finalindex], newFrame, framid, cx, cy);
+    int inital_points = last.features.size();
     for (int i=kfinalindex; i>=kfinitindex; i--) {
       assert(kf_images.find(i) != kf_images.end());
       frame_pts temp_track = Track(keyFrames[i], kf_images[i], newFrame, framid, cx, cy);
       add_more_features(last, temp_track);
     }
+    int after_kf = last.features.size();
 
     for (int i = finalindex -1; i>=initindex; i--) {
       assert(images.find(i) != images.end());
       frame_pts temp_track = Track(all_frame_pts[i], images[i], newFrame, framid, cx, cy);
       add_more_features(last, temp_track);
     }
+    int after_f = last.features.size();
+    std::cout << " KF LC: " << after_kf - inital_points
+              << " F LC: " << after_f - after_kf << "............" <<  std::flush;
     
     if (newKeyFrame(*keyFrames.rbegin(), last, FLAGS_keyframe)) {
       cv::imwrite(FLAGS_dirname + "/img_"+std::to_string(framid)+".jpg", rawFrame);
@@ -263,7 +268,11 @@ int main(int argc, char **argv)
     std::vector<corr> all_corr = new_compressed;
     std::cout << "Done with making a batch\n";
     numoutmatches = 0;
+    int valid = 0;
+    int total_vi = 0;
     for (int i=0; i<all_corr.size(); i++) {
+      total_vi++;
+      valid++;
       TwoViewInfo twoview_info;
       std::vector<int> inliers;
       if (GetEssentialRT(all_corr[i], twoview_info, inliers, options, focal)) {
@@ -299,8 +308,10 @@ int main(int argc, char **argv)
               all_corr[i].p2[loc].y);
         }
       } else {
-        std::cerr << "Something bad still happened!!!!!!!!!!\n";
+        valid--;
+        // std::cerr << "Something bad still happened!!!!!!!!!!\n";
       }
+      std::cout << "\rManaged to do " << valid << " correctly out of " << total_vi << std::flush;
     }
     for (int i=0; i<all_corr_ids.size(); i++) {
       listfocal << "img_" << keyFrames[all_corr_ids[i]].frame_id << ".jpg" << " 0 " << focal << "\n";
@@ -315,7 +326,7 @@ int main(int argc, char **argv)
       total_size++;
     }
     std::nth_element(counts.begin(), counts.begin() + total_size/2, counts.end());
-    std::cout << "Mean: " << count/total_size << " Median: " << counts[total_size/2] << "\n";
+    std::cout << "\nMean: " << count/total_size << " Median: " << counts[total_size/2] << "\n";
     num_cors << counts[total_size/2] << "\n";
     inifile << "batch_" << ch << "\n";
     fseek(fp, 0, SEEK_SET);
@@ -345,14 +356,18 @@ int main(int argc, char **argv)
       }
     }
     std::vector<corr> all_corr = new_compressed;
-    std::cout << "Done with Generating intermediate file\n";
+    std::cout << "\nDone with Generating intermediate file\n";
     numoutmatches = 0;
+    int total_vi = 0;
+    int valid = 0;
     for (int i=0; i<all_corr.size(); i++) {
+      total_vi++;
+      valid++;
       TwoViewInfo twoview_info;
       std::vector<int> inliers;
       if (GetEssentialRT(all_corr[i], twoview_info, inliers, options, focal)) {
         if (not((inliers.size() > 0.8*all_corr[i].p1.size()) && (inliers.size() >100))) {
-          std::cout << "Removing pair for " << all_corr[i].frame_1 << "\t" << all_corr[i].frame_2 << "\n";
+          // std::cout << "Removing pair for " << all_corr[i].frame_1 << "\t" << all_corr[i].frame_2 << "\n";
           continue;
         }
         rdata << all_corr[i].frame_1 << " " << all_corr[i].frame_2 << "\n";
@@ -378,8 +393,9 @@ int main(int argc, char **argv)
                 << all_corr[i].p2[loc].y << "\n";
         }
       } else {
-        std::cerr << "Something bad still happened in intermediate!!!!!!!!!!\n";
+        valid--;
       }
+      std::cout << "\rManged to do " << valid << " in intermediate correctly out of " << total_vi << std::flush;
     }
     rdata.close();
   }
