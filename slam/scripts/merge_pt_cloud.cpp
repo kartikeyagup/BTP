@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   GetBestRST(f1, f2);
 
   nvm_file merged = merge_nvm(f1, f2);
-  add_intermediate_points(merged, inter, list_focal_global);
+  // add_intermediate_points(merged, inter, list_focal_global);
 
   merged.save_to_disk(FLAGS_output_dir + "combined.nvm");
   merged.save_ply_file(FLAGS_output_dir + "combined.ply");

@@ -36,7 +36,7 @@ void GetGoodPoints(std::vector<cv::Point2f> &prevtracking,
     status[i]=0;
     cv::Point2f temmpPoint = inversetracking[i]-prevtracking[i];
     float magnitude = (temmpPoint.x)*(temmpPoint.x) + (temmpPoint.y)*(temmpPoint.y);
-    if (magnitude<=0.01) {
+    if (magnitude<=0.1) {
       status[i]=1;
     } else {
       removed++;

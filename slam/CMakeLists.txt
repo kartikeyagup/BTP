@@ -76,31 +76,45 @@ add_executable(merge scripts/merge_pt_cloud.cpp)
 
 add_executable(undistort scripts/omni2persp.cpp)
 
+add_library(matrix scripts/matrix.cpp)
+
+add_executable(kitdev scripts/evaluate_odometry.cpp)
+
+target_link_libraries(kitdev matrix)
+
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
                            glog
+                           tiff
                            ${CERES_LIBRARIES}
                            helpers-cc)
 
 target_link_libraries(main ${OpenCV_LIBS}
                            gflags
                            glog
+                           tiff
                            ${CERES_LIBRARIES}
                            helpers-cc)
 
-target_link_libraries(place_side ${OpenCV_LIBS})
+target_link_libraries(place_side ${OpenCV_LIBS}
+                              tiff)
 
 target_link_libraries(epipolar ${OpenCV_LIBS}
+                                tiff
                                 gflags)
 
 target_link_libraries(dense ${OpenCV_LIBS}
                             gflags
+                            tiff
                             dense-helpers-cc)
 
-target_link_libraries(corres ${OpenCV_LIBS})
+target_link_libraries(corres ${OpenCV_LIBS}
+                              tiff)
 
 target_link_libraries(merge ${OpenCV_LIBS}
                              gflags
+                             tiff
                              dense-helpers-cc)
 
-target_link_libraries(undistort ${OpenCV_LIBS})
+target_link_libraries(undistort ${OpenCV_LIBS}
+                                tiff)

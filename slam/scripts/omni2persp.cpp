@@ -554,7 +554,7 @@ using namespace cv;
 int main()
 {
 	FishOcam f;
-	string s = "hyper/calib_results_hero3_case.txt";
+	string s = "hyper/calib_results_hero2_case.txt";
 	f.init(s);
 	CVec2Img warp;
 	int hout;
@@ -563,12 +563,12 @@ int main()
 	double vfov;
 	double focal;
 	f.createPerspectiveWarp(warp, hout, hfov, vfov, focal, 1280, 960, 1280, true);
-
+	std::cout << "Focal is " << focal << "\n";
 	//Mat image = imread("bike07_000350_raw.png");
 	
 
-	string file_or_video_name = "hyper/outlong1.mp4";
-	string out_video = "hyper/out_und_long.avi";
+	string file_or_video_name = "hyper/cutshort.mp4";
+	string out_video = "hyper/out_climbing_und.avi";
 	cv::VideoCapture inputVideo(file_or_video_name);
 	VideoWriter outputVideo;
 	int ex = static_cast<int>(inputVideo.get(CV_CAP_PROP_FOURCC));
