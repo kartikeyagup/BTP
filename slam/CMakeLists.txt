@@ -60,6 +60,8 @@ add_library (dense-helpers-cc src/triangulate.cc
 
 add_library(sift-cc src/sift_processing.cc)
 
+add_library(matrix src/matrix.cpp)
+
 add_executable(slam scripts/slam.cpp)
 
 add_executable(main scripts/main.cpp)
@@ -75,8 +77,6 @@ add_executable(corres scripts/corres_new.cpp)
 add_executable(merge scripts/merge_pt_cloud.cpp)
 
 add_executable(undistort scripts/omni2persp.cpp)
-
-add_library(matrix scripts/matrix.cpp)
 
 add_executable(kitdev scripts/evaluate_odometry.cpp)
 
