@@ -19,8 +19,8 @@
 
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
-DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 100, "Max number of keyframes in a chunk");
+DEFINE_int32(keyframe, 10, "Max number of frames in a keyframe");
+DEFINE_int32(chunks, 150, "Max number of keyframes in a chunk");
 DEFINE_int32(overlap, 30, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
