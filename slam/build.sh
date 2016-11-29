@@ -10,7 +10,7 @@ if [ $1 = "slam" ]; then
 elif [ $1 = "epipolar" ]; then
   rm -rf epipolar
 else 
-  rm -rf dense corres merge
+  echo nothing  
 fi
 make -j4
 

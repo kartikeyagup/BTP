@@ -19,15 +19,20 @@
 
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
-DEFINE_int32(keyframe, 30, "Max number of frames in a keyframe");
-DEFINE_int32(chunks, 100, "Max number of keyframes in a chunk");
-DEFINE_int32(overlap, 10, "Number of frames to be considered in the overalp");
+DEFINE_int32(keyframe, 10, "Max number of frames in a keyframe");
+DEFINE_int32(chunks, 150, "Max number of keyframes in a chunk");
+DEFINE_int32(overlap, 30, "Number of frames to be considered in the overalp");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
-DEFINE_int32(min_corners, 50, "Minimum number of points in image below which more will be added");
+DEFINE_int32(min_corners, 12000, "Minimum number of points in image below which more will be added");
 
-float focal = 1134.0/1280;
+// float focal = 424.153/1280;
+// float focal = 516.5/640;
+// float focal = 1701.0/1920;
+// float focal = 707.0/1226; // KITTI
+// float focal = 538.918/640.0; // TUM
+float focal = 428.582/1280; // climbing hyper 
 int cx = 640;
 int cy = 360;
 constexpr int windows_size = 5;
@@ -47,7 +52,7 @@ int main(int argc, char **argv)
   int frameskip=1;
   int framid = 0;
   int prevframe = 0;
-  int maxCorners = 10000;
+  int maxCorners = 100000;
   double qualityLevel = 0.01;
   double minDistance = 2;
   int blockSize = 7;

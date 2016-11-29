@@ -60,6 +60,8 @@ add_library (dense-helpers-cc src/triangulate.cc
 
 add_library(sift-cc src/sift_processing.cc)
 
+add_library(matrix src/matrix.cpp)
+
 add_executable(slam scripts/slam.cpp)
 
 add_executable(main scripts/main.cpp)
@@ -76,31 +78,43 @@ add_executable(merge scripts/merge_pt_cloud.cpp)
 
 add_executable(undistort scripts/omni2persp.cpp)
 
+add_executable(kitdev scripts/evaluate_odometry.cpp)
+
+target_link_libraries(kitdev matrix)
+
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
                            glog
+                           tiff
                            ${CERES_LIBRARIES}
                            helpers-cc)
 
 target_link_libraries(main ${OpenCV_LIBS}
                            gflags
                            glog
+                           tiff
                            ${CERES_LIBRARIES}
                            helpers-cc)
 
-target_link_libraries(place_side ${OpenCV_LIBS})
+target_link_libraries(place_side ${OpenCV_LIBS}
+                              tiff)
 
 target_link_libraries(epipolar ${OpenCV_LIBS}
+                                tiff
                                 gflags)
 
 target_link_libraries(dense ${OpenCV_LIBS}
                             gflags
+                            tiff
                             dense-helpers-cc)
 
-target_link_libraries(corres ${OpenCV_LIBS})
+target_link_libraries(corres ${OpenCV_LIBS}
+                              tiff)
 
 target_link_libraries(merge ${OpenCV_LIBS}
                              gflags
+                             tiff
                              dense-helpers-cc)
 
-target_link_libraries(undistort ${OpenCV_LIBS})
+target_link_libraries(undistort ${OpenCV_LIBS}
+                                tiff)

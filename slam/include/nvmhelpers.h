@@ -380,37 +380,53 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
     points2(2,i) = points_common[i].second(2,0) - answer2(2,0);
   }
 
-  Eigen::MatrixXf temp = points1 * (points2.transpose());
-  Eigen::JacobiSVD<Eigen::MatrixXf> svd(temp, Eigen::ComputeThinU | Eigen::ComputeThinV);
-
-  Eigen::MatrixXf s = Eigen::MatrixXf::Identity(3, 3);
-  std::cout << svd.singularValues() << "\n";
-  Eigen::MatrixXf r = svd.matrixU() * svd.matrixV().transpose();
-  if (r.determinant() < 0) {
-    std::cerr << "Determinant obtained < 0\n";
-    int minsofar = 0;
-    float minval = r(0,0);
-    if (r(1,1)<minval) {
-      minval = r(1,1);
-      minsofar = 1;
+  Eigen::MatrixXf r(Eigen::MatrixXf::Identity(3,3));
+  float scale = 1;
+  Eigen::Vector3f t;
+  t.setZero();
+  if (points_common.size()>=3) {
+    Eigen::MatrixXf temp = points1 * (points2.transpose());
+    Eigen::JacobiSVD<Eigen::MatrixXf> svd(temp, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  
+    Eigen::MatrixXf s = Eigen::MatrixXf::Identity(3, 3);
+    std::cout << svd.singularValues() << "\n";
+    r = svd.matrixU() * svd.matrixV().transpose();
+    if (r.determinant() < 0) {
+      std::cerr << "Determinant obtained < 0\n";
+      int minsofar = 0;
+      float minval = r(0,0);
+      if (r(1,1)<minval) {
+        minval = r(1,1);
+        minsofar = 1;
+      }
+      if (r(2,2)<minval) {
+        minval = r(2,2);
+        minsofar = 2;
+      }
+      s(minsofar, minsofar) = -1;
+      r = svd.matrixU() * s *  svd.matrixV().transpose();
     }
-    if (r(2,2)<minval) {
-      minval = r(2,2);
-      minsofar = 2;
-    }
-    s(minsofar, minsofar) = -1;
-    r = svd.matrixU() * s *  svd.matrixV().transpose();
+  
+    scale = s(0,0)*svd.singularValues()(0,0) + 
+        s(1,1)*svd.singularValues()(1,0) + 
+        s(2,2)*svd.singularValues()(2,0); 
+  
+    float denom = points2.squaredNorm();
+    scale /= denom;
+  
+    t= answer1 - scale*r*answer2;
   }
 
-  float scale = s(0,0)*svd.singularValues()(0,0) + 
-      s(1,1)*svd.singularValues()(1,0) + 
-      s(2,2)*svd.singularValues()(2,0); 
+  // scale = 16.0;
+  // t << 0.137, -0.145, 0.86;
 
-  float denom = points2.squaredNorm();
-  scale /= denom;
+  // r << 0.6431,         0,   -0.7658,
+  //     -0.1065,    0.9903,   -0.0895,
+  //      0.7583,    0.1391,    0.6369;
 
-  Eigen::Vector3f t= answer1 - scale*r*answer2;
-  std::cout << scale << "\n";
+  std::cout << "scale: " << scale << "\n";
+  std::cout << "rotation " << r << "\n";
+  std::cout << "trans " << t << "\n";
   for (int i=0; i<f2.corr_data.size(); i++) {
     f2.corr_data[i].point_3d = scale*r*f2.corr_data[i].point_3d + t;
   }
