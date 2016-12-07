@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cassert>
+#include <opencv2/core/core.hpp>
 
 class FishOcam
 {
@@ -24,6 +25,7 @@ public:
   int width;         // image width
   int height;        // image height
   double invdet;
+  CVec2Img warp;     // Warping matrix
 
   FishOcam() {}
   
@@ -71,8 +73,7 @@ public:
     invdet = 1 / (c - d*e); // 1/det(A), where A = [c,d;e,1] as in the Matlab file
   }
 
-  CVec3d cam2world(const CVec2d & f)
-  {
+  CVec3d cam2world(const CVec2d & f) {
     double xp = invdet*((f.x - xc) - d*(f.y - yc));
     double yp = invdet*(-e*(f.x - xc) + c*(f.y - yc));
 
@@ -96,8 +97,7 @@ public:
     return res;
   }
 
-  CVec2d world2cam(const CVec3d & p)
-  {
+  CVec2d world2cam(const CVec3d & p) {
     double norm = sqrt(p.x*p.x + p.y*p.y);
     double theta = atan(p.z / norm);
 
@@ -127,7 +127,7 @@ public:
     return res;
   }
 
-  void createPerspectiveWarp(CVec2Img & warp, int & hout, double & hfov, double & vfov, double & focal,
+  void createPerspectiveWarp(int & hout, double & hfov, double & vfov, double & focal,
     const int win, const int hin, const int wout, const bool crop) {
     CVec3d wbase, wright, wup;
 
@@ -235,6 +235,17 @@ public:
     hfov = acos((wbase + wup / 2).Unit() * (wbase + wup / 2 + wright).Unit());
     vfov = acos((wbase + wright / 2).Unit() * (wbase + wright / 2 + wup).Unit());
     focal = (wout > hout ?( 0.5 *wout )/ tan(hfov / 2) : (0.5 *hout) / tan(vfov / 2));
+  }
+
+  void WarpImage(cv::Mat &input, cv::Mat&output) {
+    assert(output.rows == warp.rows);
+    assert(output.cols == warp.cols);
+    for (int i = 0; i < warp.rows; i++) {
+      for (int j = 0; j < warp.cols; j++) {
+        CVec2f tmp = warp.arr[i][j];
+        output.at<cv::Vec3b>(i, j) = input.at<cv::Vec3b>(tmp.y, tmp.x);
+      }
+    }
   }
 };
 
