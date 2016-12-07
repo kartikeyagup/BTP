@@ -20,7 +20,7 @@ int main()
   double focal;
   f.createPerspectiveWarp(warp, hout, hfov, vfov, focal, 1920, 1080, 1920, true);
   std::cout << "Focal is " << focal << "\n";
-
+  std::cout << "Hout is " << hout << "\n";
   std::string file_or_video_name = "wide/hostel.MP4";
   std::string out_video = "wide/hostel_out.avi";
   cv::VideoCapture inputVideo(file_or_video_name);

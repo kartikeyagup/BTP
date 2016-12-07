@@ -139,20 +139,20 @@ public:
 
       wup = wcenter.Cross(wright);
 
-      CVec3d w0 = cam2world(CVec2d(0, win / 2));
+      CVec3d w0 = cam2world(CVec2d(0, win / 2.0));
       w0 = w0 / (w0*wcenter);
 
-      CVec3d w1 = cam2world(CVec2d(hin, win / 2));
+      CVec3d w1 = cam2world(CVec2d(hin, win / 2.0));
       w1 = w1 / (w1*wcenter);
 
-      CVec3d w2 = cam2world(CVec2d(hin / 2, 0));
+      CVec3d w2 = cam2world(CVec2d(hin / 2.0, 0));
       w2 = w2 / (w2*wcenter);
 
-      CVec3d w3 = cam2world(CVec2d(hin / 2, win));
+      CVec3d w3 = cam2world(CVec2d(hin / 2.0, win));
       w3 = w3 / (w3*wcenter);
 
-      double extright = std::min(abs((w2 - wcenter)*wright), abs((w3 - wcenter)*wright));
-      double extup = std::min(abs((w0 - wcenter)*wup), abs((w1 - wcenter)*wup));
+      double extright = std::min(fabs((w2 - wcenter)*wright), fabs((w3 - wcenter)*wright));
+      double extup = std::min(fabs((w0 - wcenter)*wup), fabs((w1 - wcenter)*wup));
 
       wbase = wcenter - wright*extright - wup*extup;
       wright = wright * (2.0*extright);
