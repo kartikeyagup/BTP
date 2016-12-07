@@ -117,4 +117,5 @@ target_link_libraries(merge ${OpenCV_LIBS}
                              dense-helpers-cc)
 
 target_link_libraries(undistort ${OpenCV_LIBS}
-                                tiff)
+                                tiff
+                                gflags)
