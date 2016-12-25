@@ -12,20 +12,22 @@
 #include <unordered_set>
 #include <stdio.h>
 #include <stdlib.h>
+#include <gflags/gflags.h>
 #include "sift_processing.h"
 #include "helpers.h"
-#include "gflags/gflags.h"
 #include "correspondance.h"
+#include "FishCam.h"
 
 DEFINE_string(dirname, "data2", "Directory to dump in");
 DEFINE_string(video, "vid3.MP4", "Name of the video");
+DEFINE_string(calib, "wide/calib_results.txt", "Calibration file");
 DEFINE_int32(keyframe, 10, "Max number of frames in a keyframe");
 DEFINE_int32(chunks, 150, "Max number of keyframes in a chunk");
 DEFINE_int32(overlap, 30, "Number of frames to be considered in the overalp");
+DEFINE_int32(min_corners, 12000, "Minimum number of points in image below which more will be added");
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
-DEFINE_int32(min_corners, 12000, "Minimum number of points in image below which more will be added");
 
 // float focal = 424.153/1280;
 // float focal = 516.5/640;
@@ -36,6 +38,15 @@ float focal = 428.582/1280; // climbing hyper
 int cx = 640;
 int cy = 360;
 constexpr int windows_size = 5;
+int frameskip=1;
+int maxCorners = 100000;
+double qualityLevel = 0.01;
+double minDistance = 2;
+int blockSize = 7;
+bool useHarrisDetector = false;
+double k = 0.04;
+cv::Size winSize(15, 15);
+cv::TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10, 0.03);
 
 int main(int argc, char **argv)
 {
@@ -49,15 +60,8 @@ int main(int argc, char **argv)
   cv::namedWindow("new", 0);
   
   int numoutmatches; 
-  int frameskip=1;
   int framid = 0;
   int prevframe = 0;
-  int maxCorners = 100000;
-  double qualityLevel = 0.01;
-  double minDistance = 2;
-  int blockSize = 7;
-  bool useHarrisDetector = false;
-  double k = 0.04;
   std::vector<corr> all_corr;
 
   std::vector<cv::Mat> all_images;
@@ -66,18 +70,20 @@ int main(int argc, char **argv)
   std::vector<cv::Vec3b> colors;
   std::vector<uchar> status, status_inverse;
   std::vector<float> err;
-  cv::Size winSize(15, 15);
-  cv::TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10, 0.03);
   std::vector<int> siftids;
   std::vector<std::vector<int> > fileids;
   std::vector<std::unordered_map<int, bool> > all_files;
   int siftlatest=0;
-  
+  FishOcam cam_model;
+  if (FLAGS_undistort) {
+    cam_model.init(FLAGS_calib);
+    focal = cam_model.focal;
+  }
+
   VerifyTwoViewMatchesOptions options;
   options.bundle_adjustment = false;
   options.min_num_inlier_matches = 10;
   options.estimate_twoview_info_options.max_sampson_error_pixels = 2.25;
-
 
   while (true) {
     cap.read(rawFrame);
@@ -85,7 +91,10 @@ int main(int argc, char **argv)
       break;
     }
     if (FLAGS_undistort) {
-      undistort(rawFrame);
+      cv::Mat undistorted;
+      cam_model.WarpImage(rawFrame, undistorted);
+      // undistort(rawFrame);
+      undistorted.copyTo(rawFrame);
     }
     if (framid%10 == 0)
       std::cerr << framid <<"\n";
@@ -94,7 +103,9 @@ int main(int argc, char **argv)
       newFrame.copyTo(oldFrame);
       cx = oldFrame.cols/2;
       cy = oldFrame.rows/2;
-      focal *= 2*cx;
+      if (!FLAGS_undistort) {
+        focal *= 2*cx;
+      }
       std::cout << "Cx is: " << cx << "\n";
       std::cout << "Cy is: " << cy << "\n";
       std::cout << "Focal is: " << focal << "\n";
@@ -114,13 +125,6 @@ int main(int argc, char **argv)
       }
       for (int i=0; i<corners_prev.size(); i++) {
         colors.push_back(rawFrame.at<cv::Vec3b>(corners_prev[i]));
-        if (colors.rbegin()->val[0] == 0) {
-          if (colors.rbegin()->val[1] == 0) {
-            if (colors.rbegin()->val[2] == 0) {
-              std::cout << "Got 0 as color\n";
-            }
-          }
-        }
       }
       siftlatest = siftlatest+corners_prev.size();
       prevframe = framid;
@@ -205,14 +209,6 @@ int main(int argc, char **argv)
         newcorners.end());
       for (int i=0; i<newcorners.size(); i++) {
         colors.push_back(rawFrame.at<cv::Vec3b> (newcorners[i]));
-        // if (colors.rbegin()->val[0] == 0) {
-        //   if (colors.rbegin()->val[1] == 0) {
-        //     if (colors.rbegin()->val[2] == 0) {
-        //       std::cout << newcorners[i] << "\n";
-        //       std::cout << "Got 0 as color\n";
-        //     }
-        //   }
-        // }
       }
       for (int i=siftlatest; i<siftlatest+newcorners.size(); i++) {
         siftids.push_back(i);
