@@ -78,6 +78,7 @@ int main(int argc, char **argv)
   if (FLAGS_undistort) {
     cam_model.init(FLAGS_calib);
     focal = cam_model.focal;
+    std::cout << "Focal " << focal << "\n";
   }
 
   VerifyTwoViewMatchesOptions options;
@@ -85,11 +86,16 @@ int main(int argc, char **argv)
   options.min_num_inlier_matches = 10;
   options.estimate_twoview_info_options.max_sampson_error_pixels = 2.25;
 
+  int rc(0);
   while (true) {
     cap.read(rawFrame);
     if (rawFrame.empty()) {
-      break;
+      if (rc>20)
+       break;
+      rc++;
+      continue;
     }
+    rc = 0;
     if (FLAGS_undistort) {
       cv::Mat undistorted;
       cam_model.WarpImage(rawFrame, undistorted);
