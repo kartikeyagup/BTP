@@ -40,7 +40,7 @@ int cy = 360;
 constexpr int windows_size = 5;
 int frameskip=1;
 int maxCorners = 100000;
-double qualityLevel = 0.01;
+double qualityLevel = 0.001;
 double minDistance = 2;
 int blockSize = 7;
 bool useHarrisDetector = false;
@@ -102,8 +102,8 @@ int main(int argc, char **argv)
       // undistort(rawFrame);
       undistorted.copyTo(rawFrame);
     }
-    if (framid%10 == 0)
-      std::cerr << framid <<"\n";
+    // if (framid%10 == 0)
+    std::cout << "\rOn frame id: " << framid << " and tracking " << corners.size() << " points" << std::flush;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
       newFrame.copyTo(oldFrame);
@@ -155,8 +155,7 @@ int main(int argc, char **argv)
       corr frame_corr(prevframe, framid);
       for (int i=0; i<corners.size(); i++) {
         if (status[i]) {
-          if ((corners[i].x > (2*cx -1)) || (corners[i].y > (2*cy -1)) || (corners[i].x <0) || (corners[i].y<0))
-          {
+          if ((corners[i].x > (2*cx -1)) || (corners[i].y > (2*cy -1)) || (corners[i].x <0) || (corners[i].y<0)) {
             status[i] = 0;
             continue;
           }
