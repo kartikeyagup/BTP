@@ -186,3 +186,27 @@ cv::Point3i findColor(cv::Mat &img, cv::Point2f pt) {
   // Find color
   return answer;
 }
+
+float get_discrepancy(int frame, cv::Point3f p, cv::Point3i col) {
+  // Project ray from p to frame.
+  // Obtain color at the point if it is in the frame
+  // Return the discrepancy from expected color
+  return 1.0;
+}
+
+
+bool complete_dense::findNew2DPoint(int f1, int f2, cv::Point2f &p1, cv::Point2f &p2, cv::Point3f &p3d) {
+  // Generate ray direction from f1 frame and p1 point on image
+  // Traverse the ray in intervals of delta till you reach the max depth distance
+  // If discrepancy at a point is minimum and is also below a threshold, then it is the 3D point
+  return false;
+}
+
+bool complete_dense::findNew3DPoint(int f1, cv::Point2f &p1, cv::Point3f &p2, cv::Point3i &col) {
+  // Call find new2d Point on different image sets and return the 3D output point and color
+  return false;
+}
+
+void complete_dense::findAll3DPoints(int framid) {
+  // Run the find new 3D point over all points in a frame id
+}

@@ -55,7 +55,9 @@ add_library(helpers-cc src/triangulation.cc
                        src/correspondance.cc
                        src/helpers.cc)
 
-add_library (dense-helpers-cc src/triangulate.cc
+add_library(nvm-helpers-cc src/nvmhelpers.cc)
+
+add_library(dense-helpers-cc src/triangulate.cc
                               src/densehelpers.cc)
 
 add_library(sift-cc src/sift_processing.cc)
@@ -80,6 +82,14 @@ add_executable(undistort scripts/omni2persp.cpp)
 
 add_executable(kitdev scripts/evaluate_odometry.cpp)
 
+add_executable(new_dense scripts/new_dense.cpp)
+
+target_link_libraries(new_dense dense-helpers-cc
+                                ${OpenCV_LIBS}
+                                gflags
+                                glog
+                                tiff)
+
 target_link_libraries(kitdev matrix)
 
 target_link_libraries(slam ${OpenCV_LIBS}
@@ -94,7 +104,8 @@ target_link_libraries(main ${OpenCV_LIBS}
                            glog
                            tiff
                            ${CERES_LIBRARIES}
-                           helpers-cc)
+                           helpers-cc
+                           nvm-helpers-cc)
 
 target_link_libraries(place_side ${OpenCV_LIBS}
                               tiff)
@@ -106,7 +117,8 @@ target_link_libraries(epipolar ${OpenCV_LIBS}
 target_link_libraries(dense ${OpenCV_LIBS}
                             gflags
                             tiff
-                            dense-helpers-cc)
+                            dense-helpers-cc
+                            nvm-helpers-cc)
 
 target_link_libraries(corres ${OpenCV_LIBS}
                               tiff)
@@ -114,7 +126,8 @@ target_link_libraries(corres ${OpenCV_LIBS}
 target_link_libraries(merge ${OpenCV_LIBS}
                              gflags
                              tiff
-                             dense-helpers-cc)
+                             dense-helpers-cc
+                             nvm-helpers-cc)
 
 target_link_libraries(undistort ${OpenCV_LIBS}
                                 tiff

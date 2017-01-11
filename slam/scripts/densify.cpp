@@ -3,8 +3,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-#include "nvmhelpers.h"
-#include "triangulate.h"
 #include "densehelpers.h"
 
 DEFINE_string(nvm_file, "data2/outputVSFM_GB.nvm", "Path to nvm file");
@@ -30,7 +28,6 @@ int main(int argc, char **argv)
   all_images.resize(input.kf_data.size());
   all_gray_images.resize(input.kf_data.size());
   camera_frame_wo_images.resize(input.kf_data.size());
-  // TODO: Add distortion parameters
   for (int i=0; i<all_images.size(); i++) {
     std::cerr << FLAGS_data_dir + "/" + input.kf_data[i].filename << "\n";
     all_images[i] = cv::imread(FLAGS_data_dir + "/" + input.kf_data[i].filename);

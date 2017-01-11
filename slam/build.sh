@@ -45,6 +45,11 @@ if [ "$#" -ne 0 ]; then
       cd ..
       build/merge
     fi
+  elif [ $1 = "new_dense" ]; then
+    if [ -f new_dense ]; then 
+      cd ..
+      build/new_dense
+    fi
   else 
     echo "Invalid usage"
   fi
