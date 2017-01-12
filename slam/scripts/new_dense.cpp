@@ -17,6 +17,9 @@ int main(int argc, char **argv) {
     cd.findAll3DPoints(i);
   }
 
+  std::cout << cd.nvm.corr_data[0].corr[0].img_location << "\n";
+  std::cout << cd.get_discrepancy(cd.nvm.corr_data[0].corr[0].imgid, cd.nvm.corr_data[0].point_3d, cd.nvm.corr_data[0].color) << "\n";
+
   cd.dumpPly(FLAGS_dirname + FLAGS_output);
   return 0;
 }

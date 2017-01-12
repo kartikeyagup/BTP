@@ -19,6 +19,7 @@ struct complete_dense {
   nvm_file nvm;
   float delta;
   std::vector<float> max_depth;
+  cv::Point2f center;
 
   complete_dense(std::string file, std::string dirname)
     : nvm(file) {
@@ -28,6 +29,7 @@ struct complete_dense {
     for (int i=0; i<max_depth.size(); i++) {
       max_depth[i] = nvm.compute_max_depth(i);
     }
+    center = nvm.getCenter();
     std::cout << "Delta computed is " << delta << "\n";
   }
 
@@ -35,7 +37,8 @@ struct complete_dense {
     return nvm.num_frames();
   }
 
-  float get_discrepancy(int frame, cv::Point3f p, cv::Point3i col);
+  // Col is in RGB format
+  float get_discrepancy(int frame, Eigen::Vector3f p, cv::Point3i col);
   bool findNew2DPoint(int f1, int f2, cv::Point2f &p1, cv::Point2f &p2, cv::Point3f &p3d);
   bool findNew3DPoint(int f1, cv::Point2f &p1, cv::Point3f &p2, cv::Point3i &col);
   void findAll3DPoints(int framid);

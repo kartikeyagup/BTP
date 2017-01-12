@@ -187,11 +187,25 @@ cv::Point3i findColor(cv::Mat &img, cv::Point2f pt) {
   return answer;
 }
 
-float get_discrepancy(int frame, cv::Point3f p, cv::Point3i col) {
+float complete_dense::get_discrepancy(int frame, Eigen::Vector3f p, cv::Point3i col) {
   // Project ray from p to frame.
   // Obtain color at the point if it is in the frame
   // Return the discrepancy from expected color
-  return 1.0;
+  Eigen::Vector3f pos = nvm.kf_data[frame].rotation*p + nvm.kf_data[frame].translation;
+  pos(0, 0) *= nvm.kf_data[frame].focal;
+  pos(1, 0) *= nvm.kf_data[frame].focal;
+  cv::Point2f imgpt(pos(0,0)/pos(2,0), pos(1,0)/pos(2,0));
+  imgpt += center;
+  if (imgpt.x<0 || imgpt.x>=2*center.x || imgpt.y<0 || imgpt.y>=2*center.y) {
+    return 10000;
+  } else {
+    cv::Vec3b color = nvm.images[frame].at<cv::Vec3b> (imgpt);
+    float ans = 0.0;
+    ans += abs(((int) color[0]) - col.z);
+    ans += abs(((int) color[1]) - col.y);
+    ans += abs(((int) color[2]) - col.x);
+    return ans;
+  }
 }
 
 

@@ -127,6 +127,10 @@ struct nvm_file {
     return kf_data.size();
   }
 
+  cv::Point2f getCenter() {
+    return cv::Point2f(images[0].cols/2, images[0].rows/2);
+  }
+
   void LoadImages(std::string dir) {
     images.resize(kf_data.size());
     for (int i=0; i<kf_data.size(); i++) {
