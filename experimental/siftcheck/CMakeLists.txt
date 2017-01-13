@@ -50,11 +50,21 @@ find_package(Ceres REQUIRED)
     # include_directories(${SIFTGPU_INCLUDE_DIR})
     ## set(YOUR_LIBRARIES ${YOUR_LIBRARIES} ${SIFTGPU_LIBRARY})
 
-    add_executable(siftcheck scripts/sift_check.cpp)
+    include_directories(../../slam/include
+                        /usr/include/eigen3)
+
+    include_directories(${include_directories}
+                     ${OpenCV_INCLUDE_DIRS}
+                     ${CERES_INCLUDE_DIRS})
+
+    add_executable(siftcheck scripts/feature_matching.cpp)
+
+    add_library (dense-helpers-cc ../../slam/src/triangulate.cc)
 
     target_link_libraries(siftcheck ${OpenCV_LIBS}
                 ${CERES_LIBRARIES}
-                siftgpu)
+                siftgpu
+                dense-helpers-cc)
 
 # endif ()
 
@@ -62,10 +72,8 @@ find_package(Ceres REQUIRED)
 #########################################################
 # Include Files
 #########################################################
-# include_directories(${include_directories}
-#                     ${OpenCV_INCLUDE_DIRS}
-#                     ${CERES_INCLUDE_DIRS}
-#                     include)
+
+
 
 #add_library(helpers-cc src/triangulation.cc
 #                       src/sequential_probability_ratio.cc
@@ -79,6 +87,8 @@ find_package(Ceres REQUIRED)
 #                      src/essential_matrix_utils.cc
 #                       src/eight_point_fundamental_matrix.cc
 #                       src/correspondance.cc)
+
+
 
 #add_executable(slam scripts/slam.cpp)
 
