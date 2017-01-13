@@ -87,6 +87,7 @@ struct nvm_file {
     for (int i=0; i<num_corr; i++) {
       nvm_file >> corr_data[i].point_3d(0,0) >> corr_data[i].point_3d(1,0) >> corr_data[i].point_3d(2,0)
                >> corr_data[i].color.x >> corr_data[i].color.y >> corr_data[i].color.z; 
+      corr_data[i].point_3d *= 10000;
       int num_2d;
       nvm_file >> num_2d;
       all_corrs_counts.push_back(num_2d);
