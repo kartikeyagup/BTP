@@ -15,12 +15,12 @@ using namespace std;
 int main(int argc, char **argv)
 {
     SiftGPU sift;
-    char * test [] = {"-fo","-1","-v","1"};
-    sift.ParseParam(3,test);
+    char * test [] = {"-fo","-1","-v","0"};
+    sift.ParseParam(4,test);
     int support  = sift.CreateContextGL();
     if(support != SiftGPU::SIFTGPU_FULL_SUPPORTED)
         return 0; 
-    sift.RunSIFT("../scripts/img1.jpg");
+    sift.RunSIFT("/home/netra/Desktop/BTP/BTP/slam/lab/data0/img_0.jpg");
     // sift.SaveSIFT("img1.sift");
     int num1 = sift.GetFeatureNum();
 
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 
     sift.GetFeatureVector(&keys1[0], &des1[0]);
 
-    sift.RunSIFT("../scripts/img2.jpg");
+    sift.RunSIFT("/home/netra/Desktop/BTP/BTP/slam/lab/data1/img_0.jpg");
     // sift.SaveSIFT("img2.sift");
     int num2 = sift.GetFeatureNum();
 
@@ -60,8 +60,8 @@ int main(int argc, char **argv)
         second.push_back(keys2[match_buf[i][1]]);
         // cout << key1.x << "   " << key2.x << "   " << key1.y << "   " << key2.y << "\n";
     }
-    cv::Mat im1 = cv::imread("../scripts/img1.jpg");
-    cv::Mat im2 = cv::imread("../scripts/img2.jpg");
+    cv::Mat im1 = cv::imread("/home/netra/Desktop/BTP/BTP/slam/lab/data0/img_0.jpg");
+    cv::Mat im2 = cv::imread("/home/netra/Desktop/BTP/BTP/slam/lab/data1/img_0.jpg");
 
     for(int i = 100 ; i < 120 ; i++){     
         cv::circle(im1, cv::Point(first[i].x,first[i].y), 5, cv::Scalar(255,0,0),1,8,0);
