@@ -45,6 +45,15 @@ struct Corr3D {
     point_3d(2, 0) = p.z;
     color = c; 
   }
+
+  Corr3D(cv::Point3f p, cv::Point3i c, bool t) {
+    point_3d(0, 0) = p.x;
+    point_3d(1, 0) = p.y;
+    point_3d(2, 0) = p.z;
+    color.x = c.z;
+    color.y = c.y;
+    color.z = c.x;
+  }
 };
 
 struct nvm_file {
@@ -111,7 +120,7 @@ struct nvm_file {
         ans += distance(corr_data[i].point_3d, corr_data[j].point_3d);
       }
     }
-    return ans/ct;
+    return (ans/ct)*0.1;
   }
 
   float compute_max_depth(int id) {
@@ -120,7 +129,7 @@ struct nvm_file {
     for (int i=0; i<corr_data.size(); i++) {
       ans = std::max(ans, distance(corr_data[i].point_3d, cam_pos));
     }
-    return ans;
+    return ans*2;
   }
 
   int num_frames() {
@@ -131,11 +140,20 @@ struct nvm_file {
     return cv::Point2f(images[0].cols/2, images[0].rows/2);
   }
 
+  cv::Point3i getColor(int frame, cv::Point2f p) {
+    cv::Vec3b col = images[frame].at<cv::Vec3b>(p);
+    return cv::Point3i((int) col[2], (int) col[1], (int) col[0]);
+  }
+
   void LoadImages(std::string dir) {
     images.resize(kf_data.size());
     for (int i=0; i<kf_data.size(); i++) {
       images[i] = cv::imread(dir + kf_data[i].filename);
     }
+  }
+
+  void addNew3DPoint(cv::Point3f p, cv::Point3i col) {
+    corr_data.push_back(Corr3D(p, col));
   }
 
   void NormaliseScale(float scf) {

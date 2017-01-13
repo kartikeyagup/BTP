@@ -187,14 +187,15 @@ cv::Point3i findColor(cv::Mat &img, cv::Point2f pt) {
   return answer;
 }
 
-float complete_dense::get_discrepancy(int frame, Eigen::Vector3f p, cv::Point3i col) {
+float complete_dense::get_discrepancy(int frame, Eigen::Vector3f p, cv::Point3i col, cv::Point2f &imgpt) {
   // Project ray from p to frame.
   // Obtain color at the point if it is in the frame
   // Return the discrepancy from expected color
   Eigen::Vector3f pos = nvm.kf_data[frame].rotation*p + nvm.kf_data[frame].translation;
   pos(0, 0) *= nvm.kf_data[frame].focal;
   pos(1, 0) *= nvm.kf_data[frame].focal;
-  cv::Point2f imgpt(pos(0,0)/pos(2,0), pos(1,0)/pos(2,0));
+  imgpt.x = pos(0,0)/pos(2,0); 
+  imgpt.y = pos(1,0)/pos(2,0);
   imgpt += center;
   if (imgpt.x<0 || imgpt.x>=2*center.x || imgpt.y<0 || imgpt.y>=2*center.y) {
     return 10000;
@@ -208,19 +209,100 @@ float complete_dense::get_discrepancy(int frame, Eigen::Vector3f p, cv::Point3i 
   }
 }
 
-
-bool complete_dense::findNew2DPoint(int f1, int f2, cv::Point2f &p1, cv::Point2f &p2, cv::Point3f &p3d) {
+float complete_dense::findNew2DPoint(int f1, int f2, cv::Point2f &p1, cv::Point2f &p2, Eigen::Vector3f &p3d) {
   // Generate ray direction from f1 frame and p1 point on image
   // Traverse the ray in intervals of delta till you reach the max depth distance
   // If discrepancy at a point is minimum and is also below a threshold, then it is the 3D point
-  return false;
+  Eigen::Vector3f dir;
+  cv::Point2f centersub = p1 - center;
+  dir(0, 0) = centersub.x;
+  dir(1, 0) = centersub.y;
+  dir(2, 0) = nvm.kf_data[f1].focal;
+  dir = nvm.kf_data[f1].rotation.transpose()*dir;
+  dir /= sqrt(dir.dot(dir));
+  dir *= delta;
+  Eigen::Vector3f cent = -nvm.kf_data[f1].rotation.transpose()*nvm.kf_data[f1].translation;
+  cv::Point3i color = nvm.getColor(f1, p1);
+  float bestdisc = 1000;
+  
+  // cv::Mat temp, temp1, temp2;
+  // nvm.images[f1].copyTo(temp1);
+  // nvm.images[f2].copyTo(temp);
+  for (int i=0; i<max_depth[f1]; i++) {
+    float newdesc = get_discrepancy(f2, cent, color, p2);
+    // if (newdesc<10000) {
+    //   cv::circle(temp, p2, 5, cv::Scalar(255,0,0), -1);
+    // }
+    if (newdesc < bestdisc) {
+      // std::cout << "Optimised to " << newdesc << "\t" << cent << "\n";
+      // nvm.images[f2].copyTo(temp2);  
+      // cv::circle(temp2, p2, 5, cv::Scalar(0,255,0), -1);
+  
+      bestdisc = newdesc;
+      p3d(0, 0) = cent(0, 0);
+      p3d(1, 0) = cent(1, 0);
+      p3d(2, 0) = cent(2, 0);
+    } 
+    cent += dir;
+  }
+  // cv::circle(temp1, p1, 5, cv::Scalar(0,0,255),-1);
+  // cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
+  // cv::imshow( "Display window", temp);                   // Show our image inside it.
+  // cv::namedWindow( "Display window1", cv::WINDOW_AUTOSIZE );// Create a window for display.
+  // cv::imshow( "Display window1", temp1);                   // Show our image inside it.
+  // cv::namedWindow( "Display window2", cv::WINDOW_AUTOSIZE );// Create a window for display.
+  // cv::imshow( "Display window2", temp2);                   // Show our image inside it.
+  // cv::waitKey(0);
+
+  return bestdisc;
 }
 
-bool complete_dense::findNew3DPoint(int f1, cv::Point2f &p1, cv::Point3f &p2, cv::Point3i &col) {
+bool complete_dense::findNew3DPoint(int f1, cv::Point2f p1, cv::Point3f &p2) {
   // Call find new2d Point on different image sets and return the 3D output point and color
-  return false;
+  Eigen::Vector3f result, temp;
+  cv::Point2f p2d;
+  float best = 1000;
+  for (int i=0; i<num_frames(); i++) {
+    if (abs(i-f1)>10) {
+      float quality = findNew2DPoint(f1, i, p1, p2d, temp);
+      if (quality < best) {
+        best = quality;
+        p2.x = temp(0, 0);
+        p2.y = temp(1, 0);
+        p2.z = temp(2, 0);
+      }
+    }
+  }
+  if (best>5)
+    return false;
+  Eigen::Vector3f pteigen;
+  pteigen(0, 0) = p2.x;
+  pteigen(1, 0) = p2.y;
+  pteigen(2, 0) = p2.z;
+  cv::Point3i color = nvm.getColor(f1, p1);
+  cv::Point2f useless;
+  
+  int posvoting(0);
+  int negvoting(0);
+  for (int i=0; i<nvm.kf_data.size(); i++) {
+    if (get_discrepancy(i, pteigen, color, useless) < 5)
+      posvoting++;
+    else
+      negvoting++;
+  }
+  return (posvoting>10);
 }
 
 void complete_dense::findAll3DPoints(int framid) {
   // Run the find new 3D point over all points in a frame id
+  nvm.corr_data.clear();
+  for (int i=0; i<center.x; i++) {
+    for (int j=0; j<center.y; j++) {
+      std::cout << "\rFinding for point " << framid << "\t" <<  2*i << ", " << 2*j << ":" << nvm.corr_data.size() << std::flush;  
+      cv::Point3f p3new;
+      if (findNew3DPoint(framid, cv::Point2f(2*i, 2*j), p3new)) {
+        nvm.addNew3DPoint(p3new, nvm.getColor(framid, cv::Point2f(2*i, 2*j)));
+      }
+    }
+  }
 }
