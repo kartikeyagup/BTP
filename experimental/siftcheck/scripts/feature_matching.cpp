@@ -88,9 +88,10 @@ unordered_map<string,int> position_second;
 
 
 struct sift_corr Running_SIFT(string file1, string file2){
- SiftGPU sift;
-    char * test [] = {"-fo","-1","-v","0"};
-    sift.ParseParam(4,test);
+    SiftGPU sift;
+    char * test [] = {"-fo","-1","-da","-v","0","-p","5184x3456","-b","-nomc"};
+    sift.ParseParam(9,test);
+
     int support  = sift.CreateContextGL();
     if(support != SiftGPU::SIFTGPU_FULL_SUPPORTED)
     {
@@ -101,6 +102,7 @@ struct sift_corr Running_SIFT(string file1, string file2){
     // sift.SaveSIFT("img1.sift");
     int num1 = sift.GetFeatureNum();
 
+
     std::vector<float> des1(128*num1);
     std::vector<SiftGPU::SiftKeypoint> keys1(num1);
 
@@ -109,6 +111,8 @@ struct sift_corr Running_SIFT(string file1, string file2){
     sift.RunSIFT(file2.c_str());
     // sift.SaveSIFT("img2.sift");
     int num2 = sift.GetFeatureNum();
+
+    cout << "number of matches   : "<< num1 << "  " << num2 << endl;
 
     std::vector<float> des2(128*num2);
     std::vector<SiftGPU::SiftKeypoint>keys2(num2);
@@ -260,42 +264,52 @@ nvm_file merge_nvm_1(nvm_file &f1, nvm_file &f2, struct RST rot_trans_scale) {
   for (int i=0; i<f1.kf_data.size(); i++) {
     output.kf_data.push_back(f1.kf_data[i]);
   }
-  int offset = 0;
-  if (f1.kf_data.rbegin()->filename == f2.kf_data.begin()->filename) {
-    offset = 1;
+
+  int maxsiftid = -1;
+  for(int i = 0 ; i < f1.corr_data.size() ; i++){
+    output.corr_data.push_back(f1.corr_data[i]);
+    if(maxsiftid < f1.corr_data[i].corr[0].siftid){
+      maxsiftid = f1.corr_data[i].corr[0].siftid;
+    }
   }
+  
+  // int offset = 0;
+  // if (f1.kf_data.rbegin()->filename == f2.kf_data.begin()->filename) {
+  //   offset = 1;
+  // }
+  
   for (int i=offset; i<f2.kf_data.size(); i++) {
     output.kf_data.push_back(f2.kf_data[i]);
   }
 
-  std::unordered_map<int, Corr3D> all_mappings;
-  for (int i=0; i<f1.corr_data.size(); i++) {
-    all_mappings[f1.corr_data[i].corr[0].siftid] = f1.corr_data[i];
-  }
-  offset = f1.kf_data.size()-offset;
+  // std::unordered_map<int, Corr3D> all_mappings;
+  // for (int i=0; i<f1.corr_data.size(); i++) {
+  //   all_mappings[f1.corr_data[i].corr[0].siftid] = f1.corr_data[i];
+  // }
+  // offset = f1.kf_data.size()-offset;
 
-  for (int i=0; i<f2.corr_data.size(); i++) {
-    int sftid = f2.corr_data[i].corr[0].siftid;
-    if (all_mappings.find(sftid) == all_mappings.end()) {
-        all_mappings[sftid].point_3d = f2.corr_data[i].point_3d;
-        all_mappings[sftid].color = f2.corr_data[i].color;  
-      for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
-        all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
-      }
-    } else {
-      // sift id existed
-      for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
-        if (f2.corr_data[i].corr[j].imgid>0) {
-          all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
-        } 
-      }
-    }
-  }
+  // for (int i=0; i<f2.corr_data.size(); i++) {
+  //   int sftid = f2.corr_data[i].corr[0].siftid;
+  //   if (all_mappings.find(sftid) == all_mappings.end()) {
+  //       all_mappings[sftid].point_3d = f2.corr_data[i].point_3d;
+  //       all_mappings[sftid].color = f2.corr_data[i].color;  
+  //     for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
+  //       all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
+  //     }
+  //   } else {
+  //     // sift id existed
+  //     for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
+  //       if (f2.corr_data[i].corr[j].imgid>0) {
+  //         all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
+  //       } 
+  //     }
+  //   }
+  // }
 
-  for (auto it: all_mappings) {
-    output.corr_data.push_back(it.second);
-  }  
-  std::cout << "Number of points " << output.corr_data.size() << "\n";
+  // for (auto it: all_mappings) {
+  //   output.corr_data.push_back(it.second);
+  // }  
+  // std::cout << "Number of points " << output.corr_data.size() << "\n";
 
   return output;
 }
@@ -304,6 +318,8 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 
 	struct nvm_file file1_kf(nvm_file1);
 	struct nvm_file file2_kf(nvm_file2);
+
+  cout << "nvm file read\n";
 
 	vector<keyframe_data> key_frames_file1 = file1_kf.kf_data;
 	vector<keyframe_data> key_frames_file2 = file2_kf.kf_data;
@@ -324,21 +340,28 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 		position_second[key_frames_file2[i].filename] = i;
 	}
 
-	for(int i = 0 ; i < key_frames_file1.size() ; i++){
-		for(int j = 0; j < key_frames_file2.size() ; j++){
+	for(int i = 0 ; i < key_frames_file1.size() ; i += key_frames_file1.size()/5){
+		for(int j = 0; j < key_frames_file2.size() ; j += key_frames_file2.size()/5){
 			string file1 = folder1 + '/' + key_frames_file1[i].filename;
 			string file2 = folder2 + '/' + key_frames_file2[j].filename;
-			struct sift_corr corres = Running_SIFT(file1,file2);
+			cout << "running sift for :  " << key_frames_file1[i].filename << "  " << key_frames_file2[j].filename << "\n";
+      struct sift_corr corres = Running_SIFT(file1,file2);
+      cout << "sift run completed for :  " << i << "  " << j << "\n";
+      cout << "number of matches got : " << corres.first_img.size() << endl;
 			for(int k = 0 ; k < corres.first_img.size() ; k++){
 				struct Point_Frame new_point1;
-				new_point1.x = corres.first_img[k].x;
-				new_point1.y = corres.first_img[k].y;
-				new_point1.frame_id = key_frames_file1[k].filename;
-				
-				struct Point_Frame new_point2;
-				new_point2.x = corres.second_img[k].x;
-				new_point2.y = corres.second_img[k].y;
-				new_point2.frame_id = key_frames_file2[k].filename;
+        // cout << k << endl;
+        
+        new_point1.x = corres.first_img[k].x;
+        new_point1.y = corres.first_img[k].y;
+        new_point1.frame_id = key_frames_file1[i].filename;
+        
+        
+        struct Point_Frame new_point2;
+        new_point2.x = corres.second_img[k].x;
+        new_point2.y = corres.second_img[k].y;
+        new_point2.frame_id = key_frames_file2[j].filename;
+
 
 				if(point_to_siftid_img1.count(new_point1) > 0 && point_to_siftid_img2.count(new_point2) > 0){
 					//donot do anything
@@ -360,7 +383,9 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 					siftid_to_point_img2[siftid].push_back(new_point2);
 					siftid++;
 				}
+        // cout << "doing loop "<< k << endl;
 			}
+      cout << "matching completed file  : " <<i << "  " << j << endl;
 		}
 	}
 
@@ -373,6 +398,8 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 	for(auto it = siftid_to_point_img1.begin() ; it != siftid_to_point_img1.end() ; it++){
 		vector<Point_Frame> all_images;
 		all_images = it -> second;
+    if(all_images.size()<=1)
+      continue;
 		vector<triangulation_bundle> all_points;
 		vector<imgcorr> corres_images1;
 		for(int k = 0 ; k < all_images.size() ; k++){
@@ -390,6 +417,7 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 			corres_images1.push_back(new_corr);
 
 		}
+    cout<<"All points size:"<<all_points.size()<<endl;
 		cv::Point3f new3D_point = Triangulate(all_points);
 		cv::Point3i color;
 		color.x = 255;
@@ -408,6 +436,8 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 	for(auto it = siftid_to_point_img2.begin() ; it != siftid_to_point_img2.end() ; it++){
 		vector<Point_Frame> all_images;
 		all_images = it -> second;
+    if(all_images.size()<=1)
+      continue;
 		vector<triangulation_bundle> all_points;
 		vector<imgcorr> corres_images2;
 		for(int k = 0 ; k < all_images.size() ; k++){
@@ -424,6 +454,8 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 			new_corr.img_location = pt;
 			corres_images2.push_back(new_corr);
 		}
+
+    cout<<"All points size:"<<all_points.size()<<endl;
 		cv::Point3f new3D_point = Triangulate(all_points);
 		cv::Point3i color;
 		color.x = 255;
