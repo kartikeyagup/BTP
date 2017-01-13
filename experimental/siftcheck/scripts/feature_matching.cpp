@@ -9,10 +9,11 @@
 #include <vector>
 #include <nvmhelpers.h>
 #include <triangulate.h>
+#include <typeinfo>
 using namespace cv;
 using namespace std;
 
-
+string output_path = "/home/vision/Desktop/btp_data/output/";
 
 struct sift_corr{
   std::vector<SiftGPU::SiftKeypoint> first_img;
@@ -28,6 +29,16 @@ struct Point_Frame{
     { return (x == other.x
             && y == other.y
             && frame_id == other.frame_id);
+  }  
+};
+
+struct sift_point{
+  int x;
+  int y;
+
+  bool operator==(const sift_point &other) const
+    { return (x == other.x
+            && y == other.y);
   }  
 };
 
@@ -52,7 +63,23 @@ namespace std {
     }
   };
 
+  template<>
+  struct hash<sift_point>
+  {
+    std::size_t operator()(const sift_point& k) const
+    {
+      using std::size_t;
+      using std::hash;
+      using std::string;
+
+      return ((hash<int>()(k.x)
+               ^ (hash<int>()(k.y) << 1)) >> 1);
+    }
+  };
+
 }
+
+
 
 struct RST{
   float scale;
@@ -132,12 +159,25 @@ struct sift_corr Running_SIFT(string file1, string file2){
 
     struct sift_corr answer;
 
+    unordered_map<struct sift_point, bool> first_img;
+    unordered_map<struct sift_point, bool> second_img;
+
     for(int i = 0 ; i < num_match ; i++)
     {
         SiftGPU::SiftKeypoint & key1 = keys1[match_buf[i][0]];//feature point of first image
         SiftGPU::SiftKeypoint & key2 = keys2[match_buf[i][1]];//corresponding feature point of second image
-        answer.first_img.push_back(keys1[match_buf[i][0]]);
-        answer.second_img.push_back(keys2[match_buf[i][1]]);
+        struct sift_point f1;
+        f1.x = (int)key1.x;
+        f1.y = (int)key1.y;
+        struct sift_point f2;
+        f2.x = (int)key2.x;
+        f2.y = (int)key2.y;
+        if(first_img.count(f1) == 0 && second_img.count(f2) == 0){
+          answer.first_img.push_back(keys1[match_buf[i][0]]);
+          answer.second_img.push_back(keys2[match_buf[i][1]]);
+          first_img[f1] = true;
+          second_img[f2] = true;
+        }
         // cout << key1.x << "   " << key2.x << "   " << key1.y << "   " << key2.y << "\n";
     }
 
@@ -244,6 +284,59 @@ struct RST GetBestRST_1(nvm_file &f1, nvm_file& f2) {
   return rot_trans_scale;
 } 
 
+
+// nvm_file merge_nvm_v2(nvm_file &f1, nvm_file &f2, struct RST rot_trans_scale){
+//   float scale = rot_trans_scale.scale;
+//   Eigen::MatrixXf r = rot_trans_scale.r;
+//   Eigen::Vector3f t = rot_trans_scale.t;
+  
+//   for(int i =  0 ; i < f2.corr_data.size() ; i++){
+//     f2.corr_data[i].point_3d = scale*r*f2.corr_data[i].point_3d + t;
+//   }
+
+//   for (int i=0; i<f2.kf_data.size(); i++) {
+//     f2.kf_data[i].rotation = f2.kf_data[i].rotation * r.transpose();
+//     f2.kf_data[i].translation = scale*f2.kf_data[i].translation - f2.kf_data[i].rotation*t;
+//   }
+
+//   nvm_file output;
+//   assert(f1.description == f2.description);
+//   output.description = f1.description;
+//   for(int i = 0 ; i < f1.kf_data.size() ; i++){
+//     output.kf_data.push_back(f1.kf_data[i]);
+//   }
+//   int maxsiftid = -1;
+//   for(int i = 0 ; i < f1.corr_data.size() ; i++){
+//     output.corr_data.push_back(f1.corr_data[i]);
+//     if(maxsiftid > f1.corr_data[i].corr[0].siftid){
+//       maxsiftid = f1.corr_data[i].corr[0].siftid;
+//     }
+//   }
+//   assert(maxsiftid > 0);
+//   maxsiftid++;
+//   string sec_img = "img2_";
+//   int num = 0;
+//   unordered_map<string,int> f2_position;
+//   for(int i = 0 ; i < f2.keyframe_data.size() ; i++){
+//     output.keyframe_data.push_back(f2.keyframe_data[i]);
+//     output.keyframe_data[output.keyframe_data.size() - 1].filename = sec_img + to_string(num) + ".jpg";
+//     f2_position[f2.keyframe_data[i].filename] = output.size() - 1;
+//     num++;
+//   }
+
+//   for(int i = 0 ; i < f2.corr_data.size() ; i++){
+//     for(int j = 0 ; j < f2.corr_data[i].corr.size() ; j++){
+//       struct imgcorr new_point = f2.corr_data[i].corr[j];
+//       new_point.imgid = f2_position[f2.keyframe_data[new_point.imgid].filename];
+//       new_point.siftid = maxsiftid;
+//     }
+//     maxsiftid++;
+//   }
+//   return output;
+// }
+
+
+
 nvm_file merge_nvm_1(nvm_file &f1, nvm_file &f2, struct RST rot_trans_scale) {
   float scale = rot_trans_scale.scale;
   Eigen::MatrixXf r = rot_trans_scale.r;
@@ -264,23 +357,41 @@ nvm_file merge_nvm_1(nvm_file &f1, nvm_file &f2, struct RST rot_trans_scale) {
   for (int i=0; i<f1.kf_data.size(); i++) {
     output.kf_data.push_back(f1.kf_data[i]);
   }
-
-  int maxsiftid = -1;
+  // for(int i =0  ; i < f2.kf_data.size() ; i++){
+  //   output.kf_data.push_back(f2.kf_data[i]);
+  // }
   for(int i = 0 ; i < f1.corr_data.size() ; i++){
     output.corr_data.push_back(f1.corr_data[i]);
-    if(maxsiftid < f1.corr_data[i].corr[0].siftid){
-      maxsiftid = f1.corr_data[i].corr[0].siftid;
-    }
   }
+  // for(int i = 0 ; i < f2.corr_data.size() ; i++){
+  //   output.corr_data.push_back(f2.corr_data[i]);
+  // }
+
+  // int maxsiftid = -1;
+  // for(int i = 0 ; i < f1.corr_data.size() ; i++){
+  //   output.corr_data.push_back(f1.corr_data[i]);
+  //   if(maxsiftid < f1.corr_data[i].corr[0].siftid){
+  //     maxsiftid = f1.corr_data[i].corr[0].siftid;
+  //   }
+  // }
+
+  // assert(maxsiftid > 0);
+  // maxsiftid++;
+
+  // for(int i = 0 ; i < f2.corr_data.size() ; i++){
+  //   for(int j = 0 ; j < f2.corr_data[i].size() ; j++){
+  //     f2.corr_data.push_back()
+  //   }
+  // }
   
   // int offset = 0;
   // if (f1.kf_data.rbegin()->filename == f2.kf_data.begin()->filename) {
   //   offset = 1;
   // }
   
-  for (int i=offset; i<f2.kf_data.size(); i++) {
-    output.kf_data.push_back(f2.kf_data[i]);
-  }
+  // for (int i=offset; i<f2.kf_data.size(); i++) {
+  //   output.kf_data.push_back(f2.kf_data[i]);
+  // }
 
   // std::unordered_map<int, Corr3D> all_mappings;
   // for (int i=0; i<f1.corr_data.size(); i++) {
@@ -347,7 +458,6 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 			cout << "running sift for :  " << key_frames_file1[i].filename << "  " << key_frames_file2[j].filename << "\n";
       struct sift_corr corres = Running_SIFT(file1,file2);
       cout << "sift run completed for :  " << i << "  " << j << "\n";
-      cout << "number of matches got : " << corres.first_img.size() << endl;
 			for(int k = 0 ; k < corres.first_img.size() ; k++){
 				struct Point_Frame new_point1;
         // cout << k << endl;
@@ -362,16 +472,19 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
         new_point2.y = corres.second_img[k].y;
         new_point2.frame_id = key_frames_file2[j].filename;
 
+        cout<<new_point1.x<<" "<<new_point1.y<<" "<<new_point2.x<<" "<<new_point2.y<<endl;
 
 				if(point_to_siftid_img1.count(new_point1) > 0 && point_to_siftid_img2.count(new_point2) > 0){
+          // cout<<point_to_siftid_img1[new_point1]<<" "<<point_to_siftid_img2[new_point2]<<"#####\n";
+          // assert (point_to_siftid_img1[new_point1]==point_to_siftid_img2[new_point2]);
 					//donot do anything
 				}
-				else if(point_to_siftid_img1.count(new_point1) > 0){
+				else if(point_to_siftid_img1.count(new_point1) > 0 && point_to_siftid_img2.count(new_point2) == 0){
 					int sid = point_to_siftid_img1[new_point1];
 					point_to_siftid_img2[new_point2] = sid;
 					siftid_to_point_img2[sid].push_back(new_point2);
 				}
-				else if(point_to_siftid_img2.count(new_point2) > 0){
+				else if(point_to_siftid_img2.count(new_point2) > 0 && point_to_siftid_img1.count(new_point1) == 0){
 					int sid = point_to_siftid_img2[new_point2];
 					point_to_siftid_img1[new_point1] = sid;
 					siftid_to_point_img1[sid].push_back(new_point1);
@@ -395,15 +508,30 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 	struct nvm_file first_img_nvm;
 	struct nvm_file second_img_nvm;
 
+
+  bool take = true;
+  int given_sift;
 	for(auto it = siftid_to_point_img1.begin() ; it != siftid_to_point_img1.end() ; it++){
 		vector<Point_Frame> all_images;
 		all_images = it -> second;
     if(all_images.size()<=1)
       continue;
+
 		vector<triangulation_bundle> all_points;
 		vector<imgcorr> corres_images1;
 		for(int k = 0 ; k < all_images.size() ; k++){
 			Point_Frame given_point = all_images[k];
+      cout << folder1 + given_point.frame_id << endl;
+      cv::Mat im1 = cv::imread(folder1 + given_point.frame_id,  CV_LOAD_IMAGE_COLOR);
+      imwrite(output_path + given_point.frame_id,im1);
+
+      // if(take){
+      //   cout << "ghus gaya mc\n";
+      //   cout << folder1 + given_point.frame_id << endl;
+      //   cv::Mat im1 = cv::imread(folder1 + given_point.frame_id);
+      //   cv::circle(im1,Point(given_point.x,given_point.y), 7.5, cv::Scalar(255,0,0), 1, 8, 0);
+      //   imwrite(output_path + given_point.frame_id,im1);
+      // }
 			keyframe_data corres_frame = first_file[given_point.frame_id];
 			camera_frame_wo_image param((float)corres_frame.focal,corres_frame.rotation, corres_frame.translation,cx,cy);
 			cv::Point2f pt(given_point.x - cx, given_point.y - cy);
@@ -417,6 +545,7 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 			corres_images1.push_back(new_corr);
 
 		}
+    take = false;
     cout<<"All points size:"<<all_points.size()<<endl;
 		cv::Point3f new3D_point = Triangulate(all_points);
 		cv::Point3i color;
@@ -473,7 +602,7 @@ void GetMatch(string folder1, string folder2, string nvm_file1, string nvm_file2
 
 	struct RST rot_trans_scale =  GetBestRST_1(first_img_nvm,second_img_nvm);
 	struct nvm_file final_output = merge_nvm_1(file1_kf,file2_kf,rot_trans_scale);
-	string output_dir = "/";
+	string output_dir = "/home/vision/Desktop/btp_data/";
 	final_output.save_to_disk(output_dir + "combined.nvm");
 	final_output.save_ply_file(output_dir + "combined.ply");
 }
