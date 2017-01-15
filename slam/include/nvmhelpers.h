@@ -13,6 +13,7 @@
 #include <Eigen/SVD>
 #include <algorithm>
 #include <iostream>
+#include "triangulate.h"
 
 struct keyframe_data {
   std::string filename;
@@ -27,6 +28,11 @@ struct imgcorr {
   int imgid;
   int siftid;
   cv::Point2f img_location;
+
+  imgcorr() {};
+
+  imgcorr(int id, int sft, cv::Point2f p): 
+    imgid(id), siftid(sft), img_location(p) {};
 };
 
 imgcorr ChangeCamId(imgcorr inp, int x);
@@ -54,7 +60,42 @@ struct Corr3D {
     color.y = c.y;
     color.z = c.x;
   }
+
+  void ChangeSiftOffset(int offset) {
+    for (int i=0; i<corr.size(); i++) {
+      corr[i].siftid += offset;
+    }
+  }
+
+  int getSiftId() {
+    assert(corr.size()>0);
+    return corr[0].siftid;
+  }
+
+  int numpoints() {
+    return corr.size();
+  }
+
+  bool belongs(cv::Point2f p, int framid) {
+    for (auto it:corr) {
+      if (it.imgid == framid) {
+        cv::Point2f delta = p - it.img_location;
+        return ((delta.x*delta.x + delta.y*delta.y)<4);
+      }
+    }
+    return false;
+  }
+
+  void AddNew(cv::Point2f p, int framid) {
+    int sftid = getSiftId();
+    assert(!belongs(p, framid));
+    corr.push_back(imgcorr(framid, sftid, p));
+  }
 };
+
+Corr3D fixCorr3D(Corr3D c, int offset);
+// Takes in Corr in center subtracted form only
+void Triangulate_Internally(Corr3D &c, std::vector<keyframe_data> &kf_data);
 
 struct nvm_file {
   std::string description;
@@ -123,6 +164,10 @@ struct nvm_file {
     return (ans/ct)*0.1;
   }
 
+  int get_max_sift() {
+    return corr_data.rbegin()->corr[0].siftid;
+  }
+
   float compute_max_depth(int id) {
     float ans = 0;
     Eigen::Vector3f cam_pos = - kf_data[id].rotation.transpose() * kf_data[id].translation;
@@ -142,6 +187,11 @@ struct nvm_file {
 
   cv::Point3i getColor(int frame, cv::Point2f p) {
     cv::Vec3b col = images[frame].at<cv::Vec3b>(p);
+    return cv::Point3i((int) col[2], (int) col[1], (int) col[0]);
+  }
+
+  cv::Point3i getColorCS(int frame, cv::Point2f p) {
+    cv::Vec3b col = images[frame].at<cv::Vec3b>(p + getCenter());
     return cv::Point3i((int) col[2], (int) col[1], (int) col[0]);
   }
 

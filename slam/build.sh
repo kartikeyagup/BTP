@@ -50,6 +50,11 @@ if [ "$#" -ne 0 ]; then
       cd ..
       build/new_dense
     fi
+  elif [ $1 = "big_merge" ]; then
+    if [ -f big_merge ]; then 
+      cd ..
+      build/big_merge
+    fi  
   else 
     echo "Invalid usage"
   fi

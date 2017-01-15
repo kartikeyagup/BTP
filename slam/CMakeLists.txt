@@ -39,7 +39,8 @@ find_package(Ceres REQUIRED)
 #########################################################
 include_directories(${OpenCV_INCLUDE_DIRS}
                     ${CERES_INCLUDE_DIRS}
-                    include)
+                    include
+                    SiftGpu_loc)
 
 add_library(helpers-cc src/triangulation.cc
                        src/sequential_probability_ratio.cc
@@ -55,10 +56,18 @@ add_library(helpers-cc src/triangulation.cc
                        src/correspondance.cc
                        src/helpers.cc)
 
+# file(GLOB siftgpu-SRC "SiftGpu_loc/*.cpp")
+
+# add_library(siftGpuloc ${siftgpu-SRC})
+
 add_library(nvm-helpers-cc src/nvmhelpers.cc)
 
 add_library(dense-helpers-cc src/triangulate.cc
-                              src/densehelpers.cc)
+                             src/densehelpers.cc)
+
+add_library(slam-merger-cc src/nvmhelpers.cc
+                           src/sifthelpers.cc
+                           src/slam_merger.cc)
 
 add_library(sift-cc src/sift_processing.cc)
 
@@ -84,11 +93,20 @@ add_executable(kitdev scripts/evaluate_odometry.cpp)
 
 add_executable(new_dense scripts/new_dense.cpp)
 
+add_executable(big_merge scripts/merge_slam.cpp)
+
 target_link_libraries(new_dense dense-helpers-cc
                                 ${OpenCV_LIBS}
                                 gflags
                                 glog
                                 tiff)
+
+target_link_libraries(big_merge ${OpenCV_LIBS}
+                                gflags
+                                glog
+                                tiff
+                                slam-merger-cc
+                                siftGPU)
 
 target_link_libraries(kitdev matrix)
 

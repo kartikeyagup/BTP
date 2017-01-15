@@ -15,6 +15,35 @@ imgcorr fix_corr(imgcorr inp, int offset) {
   return result;
 }
 
+Corr3D fixCorr3D(Corr3D c, int offset) {
+  Corr3D ans;
+  ans.point_3d = c.point_3d;
+  ans.color = c.color;
+  for (int i=0; i<c.corr.size(); i++) {
+    ans.corr.push_back(fix_corr(c.corr[i], offset));
+  }
+  return ans;
+}
+
+void Triangulate_Internally(Corr3D &c, std::vector<keyframe_data> &kf_data) {
+  assert(c.corr.size()>1);
+  std::vector<triangulation_bundle> to_triangulate;
+
+  for (auto it: c.corr) {
+    triangulation_bundle t(
+        camera_frame_wo_image(kf_data[it.imgid].focal, 
+            kf_data[it.imgid].rotation, 
+            kf_data[it.imgid].translation), 
+        it.img_location);
+    to_triangulate.push_back(t);
+  }
+
+  cv::Point3f result = Triangulate(to_triangulate);
+  c.point_3d(0, 0) = result.x;
+  c.point_3d(1, 0) = result.y;
+  c.point_3d(2, 0) = result.z;
+}
+
 float get_best_scaling_factor(nvm_file &f1, nvm_file &f2) {
   std::unordered_map<int, Eigen::Vector3f> m1;
   for (auto it: f1.corr_data) {

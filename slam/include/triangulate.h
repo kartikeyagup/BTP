@@ -57,6 +57,14 @@ struct camera_frame_wo_image {
     position.z = trans(2, 0);
     intrinsics = camera_params(focal, cx, cy);
   }
+
+  camera_frame_wo_image(float focal, Eigen::Matrix3f rot, Eigen::Vector3f trans) {
+    rotation = rot;
+    position.x = trans(0, 0);
+    position.y = trans(1, 0);
+    position.z = trans(2, 0);
+    intrinsics = camera_params(focal, 0, 0);
+  }
 };
 
 struct triangulation_bundle {
