@@ -62,16 +62,16 @@ void slam_merger::join_sets(std::vector<int> frames1,
       // Check Fundamental Matrix over all corrs
       total++;
       value += corr1[i].numpoints();
-      int wdt = f1.images[0].cols;
-      int ht = f1.images[0].rows;
-      cv::Mat im3(ht, wdt*corr1[i].corr.size(), CV_8UC3);
-      for (int k=0; k<corr1[i].corr.size(); k++) {
-        cv::Mat img(im3, cv::Rect(k*wdt, 0, wdt, ht));
-        f1.images[corr1[i].corr[k].imgid].copyTo(img);
-        cv::circle(img, f1.getCenter() + corr1[i].corr[k].img_location, 5, cv::Scalar(255,0,0), -1);
-      }
-      cv::imshow("batch left", im3);
-      cv::waitKey(0);
+      // int wdt = f1.images[0].cols;
+      // int ht = f1.images[0].rows;
+      // cv::Mat im3(ht, wdt*corr1[i].corr.size(), CV_8UC3);
+      // for (int k=0; k<corr1[i].corr.size(); k++) {
+      //   cv::Mat img(im3, cv::Rect(k*wdt, 0, wdt, ht));
+      //   f1.images[corr1[i].corr[k].imgid].copyTo(img);
+      //   cv::circle(img, f1.getCenter() + corr1[i].corr[k].img_location, 5, cv::Scalar(255,0,0), -1);
+      // }
+      // cv::imshow("batch left", im3);
+      // cv::waitKey(0);
       // cv::Mat im4(sz1.height, sz1.width+sz2.width, CV_8UC1);
       Triangulate_Internally(corr1[i], f1.kf_data);
       Triangulate_Internally(corr2[i], f2.kf_data);
@@ -90,7 +90,7 @@ void slam_merger::merge_and_save(std::string path) {
   // Add common points to it
   // Save new merged files to disk
   std::vector<int> frames1, frames2;
-  int frameskip = 8;
+  int frameskip = 5;
   for (int i=0; i<f1.num_frames()/frameskip; i++) {
     frames1.push_back(frameskip*i);
   }

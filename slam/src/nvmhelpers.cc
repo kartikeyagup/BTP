@@ -44,6 +44,12 @@ void Triangulate_Internally(Corr3D &c, std::vector<keyframe_data> &kf_data) {
   c.point_3d(2, 0) = result.z;
 }
 
+std::vector<std::pair<cv::Point2f, cv::Point2f> > nvm_file::getSiftMatches(int f1, int f2) {
+  std::vector<std::pair<cv::Point2f, cv::Point2f> > answer;
+  return answer;
+}
+
+
 float get_best_scaling_factor(nvm_file &f1, nvm_file &f2) {
   std::unordered_map<int, Eigen::Vector3f> m1;
   for (auto it: f1.corr_data) {

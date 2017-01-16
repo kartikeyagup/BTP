@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <iostream>
 #include "triangulate.h"
+#include <cstddef>
+#include <SiftGPU/SiftGPU.h>
 
 struct keyframe_data {
   std::string filename;
@@ -390,6 +392,8 @@ struct nvm_file {
     }
     nvmfile.close();
   }
+
+  std::vector<std::pair<cv::Point2f, cv::Point2f> > getSiftMatches(int f1, int f2);
 };
 
 float get_best_scaling_factor(nvm_file &f1, nvm_file &f2);
