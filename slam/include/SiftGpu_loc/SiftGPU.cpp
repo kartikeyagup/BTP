@@ -31,6 +31,7 @@
 #include <vector>
 #include <algorithm>
 #include <math.h>
+#include <sys/stat.h>
 
 #include <time.h>
 using namespace std;
@@ -392,10 +393,14 @@ void split(vector<string> &toks, const string &s, const string &delims)
 
 }
 
+inline bool exists (const char* name) {
+  struct stat buffer;   
+  return (stat (name, &buffer) == 0); 
+}
 
 int  SiftGPU::ReadSIFT(const char * szFileName)
 {
-	if(szFileName)
+	if(szFileName && exists(szFileName))
 	{
 		//set the new image
 		// strcpy(_imgpath, imgpath);
