@@ -9,8 +9,8 @@ struct slam_merger {
   nvm_file f1, f2;
 
   slam_merger() {};
-  slam_merger(std::string p1, std::string p2, std::string name) :
-    f1(p1+name), f2(p2+name) {
+  slam_merger(std::string pat1, std::string pat2, std::string name) :
+    f1(pat1+name), f2(pat2+name), p1(pat1), p2(pat2) {
     f1.LoadImages(p1);
     f2.LoadImages(p2);
   }

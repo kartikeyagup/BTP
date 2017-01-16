@@ -179,10 +179,8 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
     Eigen::JacobiSVD<Eigen::MatrixXf> svd(temp, Eigen::ComputeThinU | Eigen::ComputeThinV);
   
     Eigen::MatrixXf s = Eigen::MatrixXf::Identity(3, 3);
-    std::cout << svd.singularValues() << "\n";
     r = svd.matrixU() * svd.matrixV().transpose();
     if (r.determinant() < 0) {
-      std::cerr << "Determinant obtained < 0\n";
       int minsofar = 0;
       float minval = r(0,0);
       if (r(1,1)<minval) {
@@ -207,9 +205,9 @@ void GetBestRST(nvm_file &f1, nvm_file& f2) {
     t= answer1 - scale*r*answer2;
   }
 
+  // FOR HARDCODING ONLY
   // scale = 16.0;
   // t << 0.137, -0.145, 0.86;
-
   // r << 0.6431,         0,   -0.7658,
   //     -0.1065,    0.9903,   -0.0895,
   //      0.7583,    0.1391,    0.6369;
@@ -251,8 +249,8 @@ nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
   for (int i=0; i<f2.corr_data.size(); i++) {
     int sftid = f2.corr_data[i].corr[0].siftid;
     if (all_mappings.find(sftid) == all_mappings.end()) {
-        all_mappings[sftid].point_3d = f2.corr_data[i].point_3d;
-        all_mappings[sftid].color = f2.corr_data[i].color;  
+      all_mappings[sftid].point_3d = f2.corr_data[i].point_3d;
+      all_mappings[sftid].color = f2.corr_data[i].color;  
       for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
         all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
       }
@@ -261,7 +259,7 @@ nvm_file merge_nvm(nvm_file &f1, nvm_file &f2) {
       for (int j=0; j<f2.corr_data[i].corr.size(); j++) {
         if (f2.corr_data[i].corr[j].imgid>0) {
           all_mappings[sftid].corr.push_back(fix_corr(f2.corr_data[i].corr[j], offset));
-        } 
+        }
       }
     }
   }

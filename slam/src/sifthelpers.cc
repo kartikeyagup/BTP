@@ -40,7 +40,6 @@ struct sift_corr Running_SIFT(std::string file1, std::string file2) {
 
   int num_match = matcher.GetSiftMatch(num1, match_buf);
 
-  // std::cout << num_match << "   sift matches were found;\n";
 
   struct sift_corr answer;
 
@@ -63,6 +62,9 @@ struct sift_corr Running_SIFT(std::string file1, std::string file2) {
       second_img[f2] = true;
     }
   }
+  assert(answer.first_img.size() == answer.second_img.size());
+  std::cout << answer.first_img.size() << "   sift matches were found;\n";
+
   return answer;
 }
 

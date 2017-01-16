@@ -80,7 +80,7 @@ struct Corr3D {
     for (auto it:corr) {
       if (it.imgid == framid) {
         cv::Point2f delta = p - it.img_location;
-        return ((delta.x*delta.x + delta.y*delta.y)<4);
+        return ((delta.x*delta.x + delta.y*delta.y)<25);
       }
     }
     return false;
@@ -88,8 +88,9 @@ struct Corr3D {
 
   void AddNew(cv::Point2f p, int framid) {
     int sftid = getSiftId();
-    assert(!belongs(p, framid));
-    corr.push_back(imgcorr(framid, sftid, p));
+    //TODO investigate
+    if (!belongs(p, framid))
+      corr.push_back(imgcorr(framid, sftid, p));
   }
 };
 
@@ -165,7 +166,43 @@ struct nvm_file {
   }
 
   int get_max_sift() {
-    return corr_data.rbegin()->corr[0].siftid;
+    int ans = corr_data[0].corr[0].siftid;
+    for (auto it: corr_data) {
+      ans = std::max(ans, it.getSiftId());
+    }
+    return ans;
+  }
+
+  Eigen::Vector3f GetPosition(int f1) {
+    return -kf_data[f1].rotation.transpose()*kf_data[f1].translation;
+  }
+
+  Eigen::Matrix3f GetIntrinsic(int f1) {
+    Eigen::Matrix3f result;
+    result(0, 0) = kf_data[f1].focal; result(0, 0) = 0; result(0, 0) = 0;
+    result(1, 0) = 0; result(1, 0) = kf_data[f1].focal; result(1, 0) = 0;
+    result(2, 0) = 0; result(2, 0) = 0; result(2, 0) = 1;
+    return result;
+  }
+
+  Eigen::Matrix3f GetFundamentalMatrix(int f1, int f2) {
+    Eigen::Matrix3f result;
+    result = kf_data[f1].rotation.transpose()*kf_data[f2].rotation;
+    Eigen::Vector3f deltac = GetPosition(f2) - GetPosition(f1);
+    Eigen::Vector3f deltat = - result*deltac;
+    Eigen::Matrix3f cpform;
+    cpform(0,0) = 0; cpform(0,1) = -deltat(2,0); cpform(0,2) = deltat(1,0); 
+    cpform(1,0) = deltat(2,0); cpform(1,1) = 0; cpform(1,2) = -deltat(0,0); 
+    cpform(2,0) = -deltat(1,0); cpform(2,1) = deltat(0,0); cpform(2,2) = 0;  
+    result = result*cpform;
+    result = GetIntrinsic(f2).transpose()*result*GetIntrinsic(f1);
+    return result;
+  }
+
+  void filterCorr(Corr3D &to_filter) {
+    // TODO: Put in better filtering algo
+    for (int i=0; i<to_filter.corr.size(); i++) { 
+    }
   }
 
   float compute_max_depth(int id) {

@@ -106,7 +106,8 @@ target_link_libraries(big_merge ${OpenCV_LIBS}
                                 glog
                                 tiff
                                 slam-merger-cc
-                                siftGPU)
+                                siftgpu
+                                dense-helpers-cc)
 
 target_link_libraries(kitdev matrix)
 

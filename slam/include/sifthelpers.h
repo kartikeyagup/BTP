@@ -1,7 +1,8 @@
 #ifndef SIFT_HELPERS_H
 #define SIFT_HELPERS_H
 
-#include <SiftGpu_loc/SiftGPU.h>
+#include <cstddef>
+#include <SiftGPU/SiftGPU.h>
 #include <vector>
 #include <string>
 #include <iostream>
