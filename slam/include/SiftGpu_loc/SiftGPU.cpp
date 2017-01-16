@@ -367,6 +367,53 @@ void SiftGPU::SetKeypointList(int num, const SiftKeypoint * keys, int keys_have_
 	_pyramid->SetKeypointList(num, (const float*)keys, 0, keys_have_orientation);
 }
 
+void split(vector<string> &toks, const string &s, const string &delims)
+{
+	toks.clear();
+
+	string::const_iterator segment_begin = s.begin();
+	string::const_iterator current = s.begin();
+	string::const_iterator string_end = s.end();
+
+	while (true)
+	{
+		if (current == string_end || delims.find(*current) != string::npos || *current == '\r')
+		{
+			if (segment_begin != current)
+				toks.push_back(string(segment_begin, current));
+			
+			if (current == string_end || *current == '\r')
+				break;
+			
+			segment_begin = current + 1;
+		}
+		current++;
+	}
+
+}
+
+
+int  SiftGPU::ReadSIFT(const char * szFileName)
+{
+	if(szFileName)
+	{
+		//set the new image
+		// strcpy(_imgpath, imgpath);
+		// _image_loaded = 0;
+		vector<string> toks;
+		split(toks,szFileName,".");
+		string s = toks[0] + ".jpg";
+		toks.clear();
+		strcpy(_imgpath, s.c_str());
+		_image_loaded = 0;
+		return _pyramid->ReadSIFT(szFileName);
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 void SiftGPUEX::DisplayInput() 
 {
 	if(_texImage==NULL) return;

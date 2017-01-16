@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////
 //	File:		SiftPyramid.h
 //	Author:		Changchang Wu
 //	Description : interface for the SiftPyramid class.
@@ -121,6 +121,7 @@ public:
 	virtual void ComputeGradient() = 0;
 	virtual void GetFeatureOrientations() = 0;
 	virtual void GetSimplifiedOrientation() = 0;
+	virtual int ReadSIFT(const char * szFileName);
 
     ////////////////////////////////
     virtual void CleanUpAfterSIFT()  {}

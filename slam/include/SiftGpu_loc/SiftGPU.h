@@ -194,6 +194,7 @@ public:
 	//none of the texture in processing can be larger
 	//automatic down-sample is used if necessary. 
 	SIFTGPU_EXPORT virtual void SetMaxDimension(int sz);
+	SIFTGPU_EXPORT virtual int ReadSIFT(const char * szFileName);
 	///
 public:
 	//overload the new operator because delete operator is virtual

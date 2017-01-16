@@ -210,6 +210,46 @@ void SiftPyramid::LimitFeatureCount(int have_keylist)
 
 }
 
+
+int SiftPyramid::ReadSIFT(const char * szFileName)
+{
+	if(GlobalUtil::_BinarySIFT)
+	{
+		std::ifstream in(szFileName, ios::binary);
+ 
+		in.read((char *)(&_featureNum), sizeof(int));
+		if (_featureNum <=0) return 0;
+		_keypoint_buffer.resize((_featureNum+ GlobalUtil::_texMaxDim) * 4);
+		_descriptor_buffer.resize(_featureNum * 128  +  16 * GlobalUtil::_texMaxDim);
+		float * pk = &_keypoint_buffer[0];
+		int dim;
+		in.read((char* )(&dim), sizeof(int));
+		if(dim ==128){
+			GlobalUtil::_DescriptorPPT = 1;
+			float * pd = &_descriptor_buffer[0] ;
+			for(int i = 0; i < _featureNum; i++, pk+=4, pd +=128)
+			{
+				in.read((char* )(pk +1), sizeof(float));
+				in.read((char* )(pk), sizeof(float));
+				in.read((char* )(pk+2), 2 * sizeof(float));
+				in.read((char* )(pd), 128 * sizeof(float));
+			}
+		}
+		else
+		{
+			GlobalUtil::_DescriptorPPT =0;
+			for(int i = 0; i < _featureNum; i++, pk+=4)
+			{
+				in.read((char* )(pk +1), sizeof(float));
+				in.read((char* )(pk), sizeof(float));
+				in.read((char* )(pk+2), 2 * sizeof(float));
+			}
+		}
+	}
+	return 1;
+}
+
+
 void SiftPyramid::PrepareBuffer()
 {
 	//when there is no existing keypoint list, the feature list need to be downloaded
