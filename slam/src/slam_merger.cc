@@ -97,6 +97,9 @@ void slam_merger::merge_and_save(std::string path) {
   for (int i=0; i<f2.num_frames()/frameskip; i++) {
     frames2.push_back(frameskip*i);
   }
+
+  RunAndSaveSift(f1.all_image_names(p1, frames1));
+  RunAndSaveSift(f2.all_image_names(p2, frames2));
   std::vector<Corr3D> c1, c2;
 
   join_sets(frames1, frames2, c1, c2);
