@@ -400,8 +400,7 @@ inline bool exists (const char* name) {
 
 int  SiftGPU::ReadSIFT(const char * szFileName)
 {
-	if(szFileName && exists(szFileName))
-	{
+	if (szFileName) {
 		//set the new image
 		// strcpy(_imgpath, imgpath);
 		// _image_loaded = 0;
@@ -411,6 +410,10 @@ int  SiftGPU::ReadSIFT(const char * szFileName)
 		toks.clear();
 		strcpy(_imgpath, s.c_str());
 		_image_loaded = 0;
+	} else {
+		return 0;
+	}
+	if(exists(szFileName)) {
 		return _pyramid->ReadSIFT(szFileName);
 	}
 	else

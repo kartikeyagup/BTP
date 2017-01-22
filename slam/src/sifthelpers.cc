@@ -1,9 +1,29 @@
 #include "sifthelpers.h"
 
-std::vector<std::pair<cv::Point2f, cv::Point2f> > RunSift(std::string file1, std::string file2, cv::Point2f center) {
+void RunAndSaveSift(std::vector<std::string> paths) {
   std::vector<std::pair<cv::Point2f, cv::Point2f> > answer;
 
   SiftGPU sift;
+  
+  char * test [] = {"-fo","-1","-da","-v","0","-p","5184x3456","-b","-nomc"};
+  sift.ParseParam(9, test);
+
+  int support  = sift.CreateContextGL();
+  if(support != SiftGPU::SIFTGPU_FULL_SUPPORTED) {
+    return;
+  }
+
+  for (auto it:paths) {
+    if (sift.RunSIFT((it).c_str())) {
+      sift.SaveSIFT((it+".sift").c_str());
+    }
+  }
+}
+
+std::vector<std::pair<cv::Point2f, cv::Point2f> > RunSift(std::string file1, std::string file2, cv::Point2f center) {
+  std::vector<std::pair<cv::Point2f, cv::Point2f> > answer;
+  SiftGPU sift;
+  
   char * test [] = {"-fo","-1","-da","-v","0","-p","5184x3456","-b","-nomc"};
   sift.ParseParam(9, test);
 
@@ -12,20 +32,18 @@ std::vector<std::pair<cv::Point2f, cv::Point2f> > RunSift(std::string file1, std
     return answer;
   }
 
-  // if (!sift.ReadSIFT((file1+".sift").c_str())) {
-    sift.RunSIFT(file1.c_str());
-    sift.SaveSIFT((file1 + ".sift").c_str());
-  // }
+  if (!sift.ReadSIFT((file1+".sift").c_str())) {
+    assert(false);
+  }
   int num1 = sift.GetFeatureNum();
 
   std::vector<float> des1(128*num1);
   std::vector<SiftGPU::SiftKeypoint> keys1(num1);
   sift.GetFeatureVector(&keys1[0], &des1[0]);
 
-  // if (!sift.ReadSIFT((file2+".sift").c_str())) {
-    sift.RunSIFT(file2.c_str());
-    sift.SaveSIFT((file2 + ".sift").c_str());
-  // }
+  if (!sift.ReadSIFT((file2+".sift").c_str())) {
+    assert(false);
+  }
   int num2 = sift.GetFeatureNum();
 
   std::vector<float> des2(128*num2);

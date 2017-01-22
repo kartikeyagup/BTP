@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <opencv2/core/core.hpp>
 
+void RunAndSaveSift(std::vector<std::string> paths);
 std::vector<std::pair<cv::Point2f, cv::Point2f> > RunSift(std::string f1, std::string f2, cv::Point2f center);
 
 #endif

@@ -175,6 +175,14 @@ struct nvm_file {
     return ans;
   }
 
+  std::vector<std::string> all_image_names(std::string &folder, std::vector<int> &frames) {
+    std::vector<std::string> answer;
+    for (auto it:frames) {
+      answer.push_back(folder + kf_data[it].filename);
+    }
+    return answer;
+  }
+
   Eigen::Vector3f GetPosition(int f1) {
     return -kf_data[f1].rotation.transpose()*kf_data[f1].translation;
   }
@@ -199,12 +207,6 @@ struct nvm_file {
     result = result*cpform;
     result = GetIntrinsic(f2).transpose()*result*GetIntrinsic(f1);
     return result;
-  }
-
-  void filterCorr(Corr3D &to_filter) {
-    // TODO: Put in better filtering algo
-    for (int i=0; i<to_filter.corr.size(); i++) { 
-    }
   }
 
   float compute_max_depth(int id) {
