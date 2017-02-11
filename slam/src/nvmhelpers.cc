@@ -1,4 +1,5 @@
 #include "nvmhelpers.h"
+#include "sifthelpers.h"
 
 imgcorr ChangeCamId(imgcorr inp, int x) {
   inp.imgid = x;
@@ -46,7 +47,7 @@ void Triangulate_Internally(Corr3D &c, std::vector<keyframe_data> &kf_data) {
 
 std::vector<std::pair<cv::Point2f, cv::Point2f> > nvm_file::getSiftMatches(int f1, int f2) {
   std::vector<std::pair<cv::Point2f, cv::Point2f> > answer;
-  std::vector<std::pair<cv::Point2f, cv::Point2f> > temp = RunSift(getFullPath(f1), getFullPath(f2));
+  std::vector<std::pair<cv::Point2f, cv::Point2f> > temp = RunSift(getFullPath(f1), getFullPath(f2), getCenter());
   Eigen::Matrix3f fmat = GetFundamentalMatrix(f1, f2);
   for (auto it: temp) {
     Eigen::Vector3f xdash, x;

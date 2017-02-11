@@ -95,11 +95,21 @@ add_executable(new_dense scripts/new_dense.cpp)
 
 add_executable(big_merge scripts/merge_slam.cpp)
 
+add_executable(ceres_test scripts/autodiff.cpp)
+
+# add_executable(cuboid scripts/cuboid.cpp)
+
+# target_link_libraries(cuboid ${PCL_LIBRARIES})
+
 target_link_libraries(new_dense dense-helpers-cc
                                 ${OpenCV_LIBS}
                                 gflags
                                 glog
                                 tiff)
+
+target_link_libraries(ceres_test gflags
+                                 glog
+                                 ${CERES_LIBRARIES})
 
 target_link_libraries(big_merge ${OpenCV_LIBS}
                                 gflags
@@ -146,7 +156,9 @@ target_link_libraries(merge ${OpenCV_LIBS}
                              gflags
                              tiff
                              dense-helpers-cc
-                             nvm-helpers-cc)
+                             nvm-helpers-cc
+                             slam-merger-cc
+                             siftgpu)
 
 target_link_libraries(undistort ${OpenCV_LIBS}
                                 tiff

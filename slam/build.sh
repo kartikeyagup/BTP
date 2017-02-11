@@ -55,6 +55,11 @@ if [ "$#" -ne 0 ]; then
       cd ..
       build/big_merge
     fi  
+  elif [ $1 = "ceres" ]; then
+    if [ -f ceres_test ]; then 
+      cd ..
+      build/ceres_test
+    fi  
   else 
     echo "Invalid usage"
   fi

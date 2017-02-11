@@ -187,6 +187,11 @@ struct nvm_file {
     return -kf_data[f1].rotation.transpose()*kf_data[f1].translation;
   }
 
+  std::string getFullPath(int id) {
+    // TODO: Add folder name
+    return kf_data[id].filename;
+  }
+
   Eigen::Matrix3f GetIntrinsic(int f1) {
     Eigen::Matrix3f result;
     result(0, 0) = kf_data[f1].focal; result(0, 0) = 0; result(0, 0) = 0;
