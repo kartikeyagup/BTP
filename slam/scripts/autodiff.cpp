@@ -29,6 +29,7 @@
 // Author: sameeragarwal@google.com (Sameer Agarwal)
 #include "ceres/ceres.h"
 #include "glog/logging.h"
+#include "plyfile.h"
 using ceres::AutoDiffCostFunction;
 using ceres::CostFunction;
 using ceres::Problem;
@@ -397,24 +398,35 @@ int main(int argc, char** argv) {
   double m = 1.0;
   double n = 1.0;
   Problem problem;
-  for (int i = 0; i < kNumObservations; ++i) {
+  plyfile f_wall1("plane1.ply");
+  plyfile f_wall2("plane3.ply");
+  plyfile f_roof("plane2.ply");
+
+  std::cout << "Read input\n";
+  for (int i = 0; i < f_wall1.NumPoints(); ++i) {
     problem.AddResidualBlock(
         new AutoDiffCostFunction<PlanarResidual, 1, 1, 1, 1, 1>(
-            new PlanarResidual(data[3 * i], data[3 * i + 1], data[3*i+2])),
+            new PlanarResidual(f_wall1.alldata[i].first.x,
+                               f_wall1.alldata[i].first.y, 
+                               f_wall1.alldata[i].first.z)),
         NULL,
         &a, &b, &c, &d);
   }
-  for (int i = 0; i < kNumObservations; ++i) {
+  for (int i = 0; i < f_wall2.NumPoints(); ++i) {
     problem.AddResidualBlock(
         new AutoDiffCostFunction<PlanarResidual, 1, 1, 1, 1, 1>(
-            new PlanarResidual(data1[3 * i], data1[3 * i + 1], data1[3*i+2])),
+            new PlanarResidual(f_wall2.alldata[i].first.x,
+                               f_wall2.alldata[i].first.y, 
+                               f_wall2.alldata[i].first.z)),
         NULL,
         &a, &b, &c, &e);
   }
-  for (int i = 0; i < kNumObservations; ++i) {
+  for (int i = 0; i < f_roof.NumPoints(); ++i) {
     problem.AddResidualBlock(
-        new AutoDiffCostFunction<PlanarResidual, 1, 1, 1, 1, 1>(
-            new PlanarResidual(data2[3 * i], data2[3 * i + 1], data2[3*i+2])),
+        new AutoDiffCostFunction<PlanarResidual, 1, 1, 1, 1, 1>(            
+          new PlanarResidual(f_roof.alldata[i].first.x,
+                             f_roof.alldata[i].first.y, 
+                             f_roof.alldata[i].first.z)),
         NULL,
         &k, &l, &m, &n);
   }
@@ -422,16 +434,18 @@ int main(int argc, char** argv) {
     NULL,
     &a, &b, &c, &k, &l, &m);
 
-  problem.SetParameterBlockConstant(&a);
-  problem.SetParameterBlockConstant(&k);
+  problem.SetParameterBlockConstant(&d);
+  problem.SetParameterBlockConstant(&n);
   Solver::Options options;
-  options.max_num_iterations = 25;
+  options.max_num_iterations = 1000;
   options.linear_solver_type = ceres::DENSE_QR;
+  options.use_nonmonotonic_steps = true;
   options.minimizer_progress_to_stdout = true;
   Solver::Summary summary;
   Solve(options, &problem, &summary);
-  std::cout << summary.BriefReport() << "\n";
+  std::cout << summary.FullReport() << "\n";
   std::cout << "Final 1 " << a << "\t" << b << "\t" << c << "\t" << d << "\t" << e << "\n";
   std::cout << "Final 2 " << k << "\t" << l << "\t" << m << "\t" << n << "\n";
+  std::cout << "Error: " <<(a*k + b*l + c*m)/sqrt((a*a + b*b + c*c)*(k*k + l*l + m*m)) << "\n";
   return 0;
 }
