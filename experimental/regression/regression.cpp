@@ -12,7 +12,7 @@ using ceres::Solver;
 float distance(float a, float b, float c, float d, float x, float y, float z) {
   float num = a*x + b*y + c*z + d;
   float den = sqrt(a*a + b*b + c*c);
-  return fabs(num/dem);
+  return fabs(num/den);
 }
 
 class DistanceFromPlane {
