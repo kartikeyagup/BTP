@@ -47,6 +47,16 @@ struct plane {
     c = temp(2, 0);
   }
 
+  void normalize() {
+    float n = norm();
+    a /= n;
+    b /= n;
+    c /= n;
+    d /= n;
+  }
+
+  float value(cv::Point3f p) { return a * p.x + b * p.y + c * p.z + d; }
+
   void shift(cv::Point3f p) { d = d - (a * p.x + b * p.y + c * p.z); }
 
   friend std::ostream &operator<<(std::ostream &stream, plane &p) {

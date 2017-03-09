@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   corridor c1(f, 0, 1 + (f.num_kf() / 2), "md0/test1.ply");
   corridor c2(f, f.num_kf() / 2, f.num_kf(), "md0/test2.ply");
 
-  corridor cmerged = merge_corridor(c1, c2);
+  corridor cmerged = merge_corridor(c1, c2, 0);
   cmerged.WritePly("md0/merged.ply");
   // std::vector<Corr3D> requiredpts;
   // f.get_points(0, 10, requiredpts);

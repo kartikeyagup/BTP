@@ -292,9 +292,13 @@ struct nvm_file {
 
   void get_points(int lowerbound, int upperbound,
                   std::vector<cv::Point3f> &pointsfound,
-                  std::vector<cv::Point3f> &trajectory) {
+                  std::vector<cv::Point3f> &trajectory,
+                  std::vector<Eigen::Matrix3f> &rotations,
+                  std::vector<double> &focals) {
     pointsfound.clear();
     trajectory.clear();
+    rotations.clear();
+    focals.clear();
     for (auto it : corr_data) {
       if (it.hasInRange(lowerbound, upperbound)) {
         pointsfound.push_back(cv::Point3f(it.point_3d(0, 0), it.point_3d(1, 0),
@@ -306,6 +310,8 @@ struct nvm_file {
           -kf_data[i].rotation.transpose() * kf_data[i].translation;
       trajectory.push_back(
           cv::Point3f(location(0, 0), location(1, 0), location(2, 0)));
+      rotations.push_back(kf_data[i].rotation);
+      focals.push_back(kf_data[i].focal);
     }
   }
 

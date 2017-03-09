@@ -85,7 +85,8 @@ add_executable(undistort scripts/omni2persp.cpp)
 
 add_executable(kitdev scripts/evaluate_odometry.cpp)
 
-add_executable(prior scripts/priors.cpp)
+add_executable(prior scripts/priors.cpp
+                     src/ceres_fit.cc)
 
 target_link_libraries(kitdev matrix)
 
@@ -93,6 +94,7 @@ target_link_libraries(prior ${OpenCV_LIBS}
                              gflags glog
                              tiff
                              ${PCL_LIBRARIES}
+                             ${CERES_LIBRARIES}
                              pointcloud)
 
 target_link_libraries(slam ${OpenCV_LIBS}
