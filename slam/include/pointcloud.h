@@ -27,6 +27,32 @@ struct plane {
       return answer / denom;
     }
   }
+
+  Eigen::Vector3f GetNormal() {
+    Eigen::Vector3f answer;
+    answer(0, 0) = a;
+    answer(1, 0) = b;
+    answer(2, 0) = c;
+    return answer;
+  }
+
+  void rotate(Eigen::Matrix3f rot) {
+    Eigen::Vector3f temp;
+    temp(0, 0) = a;
+    temp(1, 0) = b;
+    temp(2, 0) = c;
+    temp = (temp.transpose() * rot.transpose()).transpose();
+    a = temp(0, 0);
+    b = temp(1, 0);
+    c = temp(2, 0);
+  }
+
+  void shift(cv::Point3f p) { d = d - (a * p.x + b * p.y + c * p.z); }
+
+  friend std::ostream &operator<<(std::ostream &stream, plane &p) {
+    stream << "(" << p.a << ", " << p.b << ", " << p.c << ", " << p.d << ")";
+    return stream;
+  }
 };
 
 void segment_Points(std::vector<cv::Point3f> &inputpoints,

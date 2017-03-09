@@ -309,6 +309,30 @@ struct nvm_file {
     }
   }
 
+  void reset_origin(int index) {
+    Eigen::Vector3f location =
+        -kf_data[index].rotation.transpose() * kf_data[index].translation;
+    for (int i = 0; i < corr_data.size(); i++) {
+      corr_data[i].point_3d -= location;
+    }
+    for (int i = 0; i < kf_data.size(); i++) {
+      kf_data[i].translation =
+          kf_data[i].translation + kf_data[i].rotation * location;
+    }
+    Eigen::Matrix3f rotT = kf_data[index].rotation.transpose();
+    Eigen::Matrix3f rot = kf_data[index].rotation.transpose();
+    for (int i = 0; i < corr_data.size(); i++) {
+      corr_data[i].point_3d = rot * corr_data[i].point_3d;
+    }
+    for (int i = 0; i < kf_data.size(); i++) {
+      kf_data[i].translation =
+          -kf_data[i].rotation.transpose() * kf_data[i].translation;
+      kf_data[i].translation = rot * kf_data[i].translation;
+      kf_data[i].rotation = kf_data[i].rotation * rotT;
+      kf_data[i].translation = -kf_data[i].rotation * kf_data[i].translation;
+    }
+  }
+
   float mdistance() {
     float maxx(corr_data[0].point_3d(0, 0)), maxy(corr_data[0].point_3d(1, 0)),
         maxz(corr_data[0].point_3d(2, 0)), minx(corr_data[0].point_3d(0, 0)),
@@ -325,7 +349,7 @@ struct nvm_file {
 
     return sqrt((maxx - minx) * (maxx - minx) + (maxy - miny) * (maxy - miny) +
                 (maxz - minz) * (maxz - minz)) /
-           75;
+           100;
   }
 };
 

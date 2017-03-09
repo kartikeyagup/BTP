@@ -72,10 +72,11 @@ void fit3Planes(std::vector<cv::Point3f> &inputpoints,
   segment_Points(inputpoints, inliers1, p1, distance);
   std::vector<cv::Point3f> remaining_pts =
       filterPoints(inputpoints, inliers1, plane1);
+
   segment_Points(remaining_pts, inliers2, p2, distance);
   std::vector<cv::Point3f> remaining_pts_1 =
       filterPoints(remaining_pts, inliers2, plane2);
   segment_Points(remaining_pts_1, inliers3, p3, distance);
   std::vector<cv::Point3f> remaining_pts2 =
-      filterPoints(inputpoints, inliers3, plane3);
+      filterPoints(remaining_pts_1, inliers3, plane3);
 }

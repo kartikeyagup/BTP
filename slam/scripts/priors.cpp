@@ -10,8 +10,11 @@ DEFINE_string(nvm_file, "md0/outputVSFM_GB.nvm", "Path to nvm file");
 int main(int argc, char** argv) {
   nvm_file f(FLAGS_nvm_file);
 
-  corridor c(f, 0, f.num_kf(), "md0/test.ply");
+  corridor c1(f, 0, 1 + (f.num_kf() / 2), "md0/test1.ply");
+  corridor c2(f, f.num_kf() / 2, f.num_kf(), "md0/test2.ply");
 
+  corridor cmerged = merge_corridor(c1, c2);
+  cmerged.WritePly("md0/merged.ply");
   // std::vector<Corr3D> requiredpts;
   // f.get_points(0, 10, requiredpts);
   // f.corr_data = requiredpts;
