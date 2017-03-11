@@ -30,8 +30,25 @@ struct PerpResidual {
   }
 };
 
-void optimize(plane& rf, plane& lft, plane& rt, std::vector<cv::Point3f> pts_rf,
-              std::vector<cv::Point3f> pts_left,
-              std::vector<cv::Point3f> pts_right);
+struct PerpTrajectoryResidual {
+  PerpTrajectoryResidual(double x, double y, double z) : x_(x), y_(y), z_(z) {}
+  template <typename T>
+  bool operator()(const T* const x1, const T* const x2, const T* const x3,
+                  T* residual) const {
+    residual[0] = 100.0 * (x1[0] * x_ + x2[0] * y_ + x3[0] * z_);
+    return true;
+  }
+
+ private:
+  const double x_;
+  const double y_;
+  const double z_;
+};
+
+void optimize(plane& rf, plane& lft, plane& rt,
+              std::vector<cv::Point3f>& pts_rf,
+              std::vector<cv::Point3f>& pts_left,
+              std::vector<cv::Point3f>& pts_right,
+              std::vector<cv::Point3f>& trajectory, float mindistance);
 
 #endif

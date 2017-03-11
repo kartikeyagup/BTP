@@ -200,6 +200,10 @@ struct nvm_file {
 
   int num_kf() { return kf_data.size(); }
 
+  Eigen::Vector3f get_camera_position(int i) {
+    return -kf_data[i].rotation.transpose() * kf_data[i].translation;
+  }
+
   void save_ply_file(std::string path) {
     std::ofstream plyfile;
     plyfile.open(path);
@@ -354,8 +358,31 @@ struct nvm_file {
     }
 
     return sqrt((maxx - minx) * (maxx - minx) + (maxy - miny) * (maxy - miny) +
-                (maxz - minz) * (maxz - minz)) /
-           100;
+                (maxz - minz) * (maxz - minz));
+  }
+
+  float distance_kf(int f1, int f2) {
+    Eigen::Vector3f p1 = get_camera_position(f1);
+    Eigen::Vector3f p2 = get_camera_position(f2);
+    return (p2 - p1).norm();
+  }
+
+  float mdistance_1(int st, int end) {
+    float ans(0.0);
+    for (int i = st; i < end - 1; i++) {
+      ans += distance_kf(i, i + 1);
+    }
+    return (ans / (end - st - 1));
+  }
+
+  Eigen::Vector3f get_motion_vector(int f1, int f2, int ref) {
+    // TODO incorporate reference frame
+    Eigen::Vector3f p1, p2;
+    p1 = get_camera_position(f1);
+    p2 = get_camera_position(f2);
+    Eigen::Vector3f result = p2 - p1;
+    result.normalize();
+    return result;
   }
 };
 

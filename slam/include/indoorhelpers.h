@@ -37,15 +37,20 @@ struct corridor {
   }
 
   corridor(){};
-  corridor(nvm_file f, int st, int end, std::string testpath) {
+  corridor(nvm_file f, int st, int end, std::string testpath = "") {
+    std::cout << "Fitting corridor from " << st << " to " << end << "\n";
+    float mxdistance = f.mdistance_1(st, end);
+    std::cout << mxdistance << " is the distance\n";
+    // std::cout << f.distance_kf(st, end - 1) << "\n";
     std::vector<cv::Point3f> reqdpts, plane1, plane2, plane3;
     plane p1, p2, p3;
     f.reset_origin(st);
     f.get_points(st, end, reqdpts, trajectory, rotations, focals);
-    fit3Planes(reqdpts, plane1, plane2, plane3, p1, p2, p3, f.mdistance());
+    fit3Planes(reqdpts, plane1, plane2, plane3, p1, p2, p3, 0.8 * mxdistance);
     float dp12 = fabs(p1.dotp(p2));
     float dp13 = fabs(p1.dotp(p3));
     float dp23 = fabs(p2.dotp(p3));
+    std::cout << dp12 << "\t" << dp23 << "\t" << dp13 << "\n";
     if (dp12 > dp23 and dp12 > dp13) {
       // 3 is the roof
       roof = p3;
@@ -62,6 +67,7 @@ struct corridor {
         points_right_wall = plane1;
       }
     } else if (dp13 > dp23 and dp13 > dp12) {
+      // std::cout << "Setting 2 as roof\n";
       // 2 is the roof
       roof = p2;
       points_roof = plane2;
@@ -93,15 +99,11 @@ struct corridor {
       }
     }
     // Run optimisation pipeline
-    std::cout << roof << "\n";
-    std::cout << right_wall << "\n";
-    std::cout << left_wall << "\n";
     optimize(roof, left_wall, right_wall, points_roof, points_left_wall,
-             points_right_wall);
-    std::cout << roof << "\n";
-    std::cout << right_wall << "\n";
-    std::cout << left_wall << "\n";
-    WritePly(testpath);
+             points_right_wall, trajectory, 2 * mxdistance);
+    if (testpath != "") {
+      WritePly(testpath);
+    };
   }
 
   float get_width() {
@@ -204,9 +206,9 @@ struct corridor {
 
 corridor merge_corridor(corridor c1, corridor c2, int angle) {
   corridor answer(c1);
-  std::cout << "Left wall " << c1.left_wall.dotp(c2.left_wall) << "\n";
-  std::cout << "Right wall " << c1.right_wall.dotp(c2.right_wall) << "\n";
-  std::cout << "Roof " << c1.roof.dotp(c2.roof) << "\n";
+  // std::cout << "Left wall " << c1.left_wall.dotp(c2.left_wall) << "\n";
+  // std::cout << "Right wall " << c1.right_wall.dotp(c2.right_wall) << "\n";
+  // std::cout << "Roof " << c1.roof.dotp(c2.roof) << "\n";
   // Scaling
   if (angle == 0) {
     c2.scale(c1.get_width() / c2.get_width());
@@ -217,8 +219,8 @@ corridor merge_corridor(corridor c1, corridor c2, int angle) {
   Eigen::Vector3f axis1, axis2;
   axis1 = c1.GetAxis();
   axis2 = c2.GetAxis();
-  std::cout << "Axis 1" << axis1 << "\n";
-  std::cout << "Axis 2" << axis2 << "\n";
+  // std::cout << "Axis 1" << axis1 << "\n";
+  // std::cout << "Axis 2" << axis2 << "\n";
   Eigen::Vector3f v = axis2.cross(axis1);
   float con = axis2.dot(axis1);
   Eigen::Matrix3f vx;
@@ -238,12 +240,12 @@ corridor merge_corridor(corridor c1, corridor c2, int angle) {
   rot(2, 2) = 1.0;
   rot += vx;
   rot += (1.0 / (1.0 + con)) * vx * vx;
-  std::cout << rot << "\n is the rotation matrix\n";
+  // std::cout << rot << "\n is the rotation matrix\n";
   c2.rotate(rot);
   axis1 = c1.GetAxis();
   axis2 = c2.GetAxis();
-  std::cout << "Axis 1" << axis1 << "\n";
-  std::cout << "Axis 2" << axis2 << "\n";
+  // std::cout << "Axis 1" << axis1 << "\n";
+  // std::cout << "Axis 2" << axis2 << "\n";
   if (angle == 1) {
     // Right turn
   } else if (angle == 2) {

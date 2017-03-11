@@ -5,33 +5,60 @@
 #include "nvmhelpers.h"
 #include "pointcloud.h"
 
-DEFINE_string(nvm_file, "md0/outputVSFM_GB.nvm", "Path to nvm file");
+DEFINE_string(dir, "data5/", "Directory where nvm file is");
+DEFINE_string(nvm_file, "outputVSFM_GB.nvm", "Name of nvm file");
+DEFINE_int32(batch_size, 20, "Size of batch for cuboid estimation");
 
 int main(int argc, char** argv) {
-  nvm_file f(FLAGS_nvm_file);
+  google::SetUsageMessage("priors --help");
+  google::SetVersionString("1.0.0");
+  google::ParseCommandLineFlags(&argc, &argv, true);
 
-  corridor c1(f, 0, 1 + (f.num_kf() / 2), "md0/test1.ply");
-  corridor c2(f, f.num_kf() / 2, f.num_kf(), "md0/test2.ply");
+  nvm_file f(FLAGS_dir + FLAGS_nvm_file);
 
-  corridor cmerged = merge_corridor(c1, c2, 0);
-  cmerged.WritePly("md0/merged.ply");
-  // std::vector<Corr3D> requiredpts;
-  // f.get_points(0, 10, requiredpts);
-  // f.corr_data = requiredpts;
-  // f.save_ply_file("test.ply");
+  std::vector<corridor> all_corridors;
+  std::vector<int> motion_types;
+  int st = 0, en = 2;
+  // [st, en-1] is corridor, en is new point being checked
+  while (en < f.num_kf()) {
+    if (en - st >= FLAGS_batch_size) {
+      all_corridors.push_back(corridor(
+          f, st, en,
+          FLAGS_dir + "cor" + std::to_string(all_corridors.size()) + ".ply"));
+      motion_types.push_back(0);
+      st = en - 1;
+      en = en + 1;
+    } else {
+      Eigen::Vector3f st_prev = f.get_motion_vector(st, en - 1, st);
+      Eigen::Vector3f prev = f.get_motion_vector(en - 1, en, st);
+      if (prev.dot(st_prev) < 0.4) {
+        std::cout << "Turn took place\n";
+        // Turn is taking place
+        all_corridors.push_back(corridor(
+            f, st, en,
+            FLAGS_dir + "cor" + std::to_string(all_corridors.size()) + ".ply"));
+        motion_types.push_back(1);
+        st = en - 1;
+        en = en + 1;
+      } else {
+        en++;
+      }
+    }
+  }
+  if (en - st > 10) {
+    all_corridors.push_back(corridor(
+        f, st, en,
+        FLAGS_dir + "cor" + std::to_string(all_corridors.size()) + ".ply"));
+  }
 
-  // std::vector<cv::Point3f> input;
-  // input.resize(15);
-  // for (size_t i = 0; i < input.size(); ++i) {
-  //   input[i].x = 1024 * rand() / (RAND_MAX + 1.0f);
-  //   input[i].y = 1024 * rand() / (RAND_MAX + 1.0f);
-  //   // input[i].y = 3.0 - x;
-  //   input[i].z = 2.0 - input[i].x - input[i].y;
-  // }
-  // // input[0].z = 2.0;
-  // std::vector<int> indices;
-  // plane p;
-  // segment_Points(input, indices, p, 0.01);
-  // std::cout << p.a << "\t" << p.b << "\t" << p.c << "\t" << p.d << "\n";
-  // std::cout << indices.size() << "\n";
+  corridor cmerged = all_corridors[0];
+  for (int i = 1; i < all_corridors.size(); i++) {
+    cmerged = merge_corridor(cmerged, all_corridors[i], motion_types[i - 1]);
+  }
+  // corridor c1(f, 0, 1 + (f.num_kf() / 2), "md0/test1.ply");
+  // corridor c2(f, f.num_kf() / 2, f.num_kf(), "md0/test2.ply");
+  // corridor cmerged = merge_corridor(c1, c2, 0);
+  cmerged.WritePly(FLAGS_dir + "merged.ply");
+  f.reset_origin(0);
+  f.save_ply_file(FLAGS_dir + "reset.ply");
 }
