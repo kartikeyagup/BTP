@@ -70,6 +70,43 @@ struct nvm_file {
   int median_val;
 
   nvm_file(){};
+
+  static void q2r(Eigen::Vector4f &q, Eigen::Matrix3f &r) {
+    float c2 = q(0, 0);
+    r.setZero();
+    if (fabs(fabs(c2) - 1.0) > 1e-12) {
+      float s2 =
+          sqrt(q(1, 0) * q(1, 0) + q(2, 0) * q(2, 0) + q(3, 0) * q(3, 0));
+      float s = 2 * s2 * c2;
+      float c = 2 * c2 * c2 - 1;
+      float cc = 1 - c;
+      float n1 = q(1, 0) / s2;
+      float n2 = q(2, 0) / s2;
+      float n3 = q(3, 0) / s2;
+      float n12cc = n1 * n2 * cc;
+      float n23cc = n2 * n3 * cc;
+      float n31cc = n3 * n1 * cc;
+      float n1s = n1 * s;
+      float n2s = n2 * s;
+      float n3s = n3 * s;
+
+      r(0, 0) = c + n1 * n1 * cc;
+      r(0, 1) = n12cc - n3s;
+      r(0, 2) = n31cc + n2s;
+      r(1, 0) = n12cc + n3s;
+      r(1, 1) = c + n2 * c2 * cc;
+      r(1, 2) = n23cc - n1s;
+      r(2, 0) = n31cc - n2s;
+      r(2, 1) = n23cc + n1s;
+      r(2, 2) = c + n3 * n3 * cc;
+
+    } else {
+      r(0, 0) = 1.0;
+      r(1, 1) = 1.0;
+      r(2, 2) = 1.0;
+    }
+  }
+
   nvm_file(std::string path) {
     std::ifstream nvm_file;
     nvm_file.open(path);
@@ -79,14 +116,27 @@ struct nvm_file {
     std::cerr << "Number of keyframes " << num_kf << "\n";
     kf_data.resize(num_kf);
     for (int i = 0; i < num_kf; i++) {
-      nvm_file >> kf_data[i].filename >> kf_data[i].focal >>
-          kf_data[i].rotation(0, 0) >> kf_data[i].rotation(0, 1) >>
-          kf_data[i].rotation(0, 2) >> kf_data[i].rotation(1, 0) >>
-          kf_data[i].rotation(1, 1) >> kf_data[i].rotation(1, 2) >>
-          kf_data[i].rotation(2, 0) >> kf_data[i].rotation(2, 1) >>
-          kf_data[i].rotation(2, 2) >> kf_data[i].translation(0, 0) >>
-          kf_data[i].translation(1, 0) >> kf_data[i].translation(2, 0) >>
-          kf_data[i].d1 >> kf_data[i].d2;
+      if (description == "NVM_V3") {
+        Eigen::Vector4f quat;
+        nvm_file >> kf_data[i].filename >> kf_data[i].focal >> quat(0, 0) >>
+            quat(1, 0) >> quat(2, 0) >> quat(3, 0) >>
+            kf_data[i].translation(0, 0) >> kf_data[i].translation(1, 0) >>
+            kf_data[i].translation(2, 0) >> kf_data[i].d1 >> kf_data[i].d2;
+        q2r(quat, kf_data[i].rotation);
+        kf_data[i].translation = -kf_data[i].rotation * kf_data[i].translation;
+      } else {
+        nvm_file >> kf_data[i].filename >> kf_data[i].focal >>
+            kf_data[i].rotation(0, 0) >> kf_data[i].rotation(0, 1) >>
+            kf_data[i].rotation(0, 2) >> kf_data[i].rotation(1, 0) >>
+            kf_data[i].rotation(1, 1) >> kf_data[i].rotation(1, 2) >>
+            kf_data[i].rotation(2, 0) >> kf_data[i].rotation(2, 1) >>
+            kf_data[i].rotation(2, 2) >> kf_data[i].translation(0, 0) >>
+            kf_data[i].translation(1, 0) >> kf_data[i].translation(2, 0) >>
+            kf_data[i].d1 >> kf_data[i].d2;
+      }
+    }
+    if (description == "NVM_V3") {
+      description = "NVM_V3_R9T";
     }
     nvm_file >> num_corr;
     std::cerr << "Number of correspondances " << num_corr << "\n";
@@ -104,10 +154,10 @@ struct nvm_file {
         nvm_file >> corr_data[i].corr[j].imgid >> corr_data[i].corr[j].siftid >>
             corr_data[i].corr[j].img_location.x >>
             corr_data[i].corr[j].img_location.y;
-        if (corr_data[i].corr[j].siftid != corr_data[i].corr[0].siftid)
-          std::cout << j << "\t" << corr_data[i].corr[j].siftid << "\t"
-                    << corr_data[i].corr[0].siftid << "\n";
-        assert(corr_data[i].corr[j].siftid == corr_data[i].corr[0].siftid);
+        // if (corr_data[i].corr[j].siftid != corr_data[i].corr[0].siftid)
+        //   std::cout << j << "\t" << corr_data[i].corr[j].siftid << "\t"
+        //             << corr_data[i].corr[0].siftid << "\n";
+        // assert(corr_data[i].corr[j].siftid == corr_data[i].corr[0].siftid);
       }
     }
     std::cout << "Number of corrs: " << corr_data.size() << "\n";
@@ -117,6 +167,45 @@ struct nvm_file {
                      all_corrs_counts.end());
     median_val = all_corrs_counts[all_corrs_counts.size() / 2];
     std::cout << median_val << "\n";
+  }
+
+  int get_imgid(int ind) {
+    int st = 0, end = 0;
+    std::string fname = kf_data[ind].filename;
+    st = 1 + fname.find("_");
+    end = fname.find(".");
+    return std::stoi(fname.substr(st, end));
+  }
+
+  std::string get_imgtyp() {
+    return kf_data[0].filename.substr(kf_data[0].filename.find("."));
+  }
+
+  void sortNVM() {
+    std::unordered_map<std::string, int> old_invmap;
+    std::unordered_map<int, std::string> old_map;
+    std::unordered_map<std::string, int> new_map;
+    std::vector<int> all_files;
+    for (int i = 0; i < kf_data.size(); i++) {
+      old_map[i] = kf_data[i].filename;
+      old_invmap[kf_data[i].filename] = i;
+      all_files.push_back(get_imgid(i));
+    }
+    std::sort(all_files.begin(), all_files.end());
+    std::vector<keyframe_data> new_kf;
+    for (int i = 0; i < all_files.size(); i++) {
+      new_kf.push_back(
+          kf_data[old_invmap["img_" + std::to_string(all_files[i]) +
+                             get_imgtyp()]]);
+      new_map["img_" + std::to_string(all_files[i]) + get_imgtyp()] = i;
+    }
+    kf_data = new_kf;
+    for (int i = 0; i < corr_data.size(); i++) {
+      for (int j = 0; j < corr_data[i].corr.size(); j++) {
+        corr_data[i].corr[j].imgid =
+            new_map[old_map[corr_data[i].corr[j].imgid]];
+      }
+    }
   }
 
   void NormaliseScale(float scf) {
@@ -162,6 +251,7 @@ struct nvm_file {
   }
 
   void save_to_disk(std::string path) {
+    std::cout << "Saving " << path << "\n";
     std::ofstream nvmfile;
     nvmfile.open(path);
     nvmfile.precision(8);

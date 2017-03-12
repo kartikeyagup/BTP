@@ -15,7 +15,10 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
 
   nvm_file f(FLAGS_dir + FLAGS_nvm_file);
-
+  f.sortNVM();
+  // f.save_to_disk(FLAGS_dir + "test.nvm");
+  // return 0;
+  f.save_ply_file(FLAGS_dir + "raw.ply");
   std::vector<corridor> all_corridors;
   std::vector<int> motion_types;
   int st = 0, en = 2;
@@ -31,8 +34,9 @@ int main(int argc, char** argv) {
     } else {
       Eigen::Vector3f st_prev = f.get_motion_vector(st, en - 1, st);
       Eigen::Vector3f prev = f.get_motion_vector(en - 1, en, st);
-      if (prev.dot(st_prev) < 0.4) {
-        std::cout << "Turn took place\n";
+      if (fabs(prev.dot(st_prev)) < 0.4) {
+        std::cout << "Turn took place\t" << fabs(prev.dot(st_prev)) << "\n";
+        ;
         // Turn is taking place
         all_corridors.push_back(corridor(
             f, st, en,
