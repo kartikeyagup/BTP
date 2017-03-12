@@ -45,6 +45,11 @@ if [ "$#" -ne 0 ]; then
       cd ..
       build/merge
     fi
+  elif [ $1 = "prior" ]; then
+    if [ -f prior ]; then
+      cd ..
+      build/prior
+    fi
   else 
     echo "Invalid usage"
   fi

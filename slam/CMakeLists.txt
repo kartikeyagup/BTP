@@ -37,9 +37,12 @@ find_package(Ceres REQUIRED)
 #########################################################
 # Include Files
 #########################################################
+find_package(PCL 1.2 REQUIRED)
+
 include_directories(${OpenCV_INCLUDE_DIRS}
                     ${CERES_INCLUDE_DIRS}
-                    include)
+                    include
+                    ${PCL_INCLUDE_DIRS})
 
 add_library(helpers-cc src/triangulation.cc
                        src/sequential_probability_ratio.cc
@@ -62,6 +65,8 @@ add_library(sift-cc src/sift_processing.cc)
 
 add_library(matrix src/matrix.cpp)
 
+add_library(pointcloud src/pointcloud.cc)
+
 add_executable(slam scripts/slam.cpp)
 
 add_executable(main scripts/main.cpp)
@@ -80,7 +85,17 @@ add_executable(undistort scripts/omni2persp.cpp)
 
 add_executable(kitdev scripts/evaluate_odometry.cpp)
 
+add_executable(prior scripts/priors.cpp
+                     src/ceres_fit.cc)
+
 target_link_libraries(kitdev matrix)
+
+target_link_libraries(prior ${OpenCV_LIBS}
+                             gflags glog
+                             tiff
+                             ${PCL_LIBRARIES}
+                             ${CERES_LIBRARIES}
+                             pointcloud)
 
 target_link_libraries(slam ${OpenCV_LIBS}
                            gflags
