@@ -57,6 +57,8 @@ struct plane {
 
   float value(cv::Point3f p) { return a * p.x + b * p.y + c * p.z + d; }
 
+  float distance(cv::Point3f p) { return fabs(value(p)) / norm(); }
+
   void shift(cv::Point3f p) { d = d - (a * p.x + b * p.y + c * p.z); }
 
   friend std::ostream &operator<<(std::ostream &stream, plane &p) {
@@ -67,6 +69,9 @@ struct plane {
 
 void segment_Points(std::vector<cv::Point3f> &inputpoints,
                     std::vector<int> &inliers, plane &p, float distance);
+
+void fitPlane(std::vector<cv::Point3f> &inpoints,
+              std::vector<cv::Point3f> &planepts, plane &p, float dist);
 
 void fit3Planes(std::vector<cv::Point3f> &inputpoints,
                 std::vector<cv::Point3f> &plane1,

@@ -63,6 +63,15 @@ std::vector<cv::Point3f> filterPoints(std::vector<cv::Point3f> &input,
   return answer;
 }
 
+void fitPlane(std::vector<cv::Point3f> &inpoints,
+              std::vector<cv::Point3f> &planepts, plane &p, float dist) {
+  std::vector<int> inliers1;
+  segment_Points(inpoints, inliers1, p, dist);
+  std::vector<cv::Point3f> remaining_pts =
+      filterPoints(inpoints, inliers1, planepts);
+  inpoints = remaining_pts;
+}
+
 void fit3Planes(std::vector<cv::Point3f> &inputpoints,
                 std::vector<cv::Point3f> &plane1,
                 std::vector<cv::Point3f> &plane2,
@@ -76,6 +85,7 @@ void fit3Planes(std::vector<cv::Point3f> &inputpoints,
   segment_Points(remaining_pts, inliers2, p2, distance);
   std::vector<cv::Point3f> remaining_pts_1 =
       filterPoints(remaining_pts, inliers2, plane2);
+
   segment_Points(remaining_pts_1, inliers3, p3, distance);
   std::vector<cv::Point3f> remaining_pts2 =
       filterPoints(remaining_pts_1, inliers3, plane3);

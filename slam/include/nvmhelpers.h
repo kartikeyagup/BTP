@@ -474,6 +474,12 @@ struct nvm_file {
     result.normalize();
     return result;
   }
+
+  float getdotp(int i1, int i2, int i3) {
+    Eigen::Vector3f m1 = get_motion_vector(i1, i2, 0);
+    Eigen::Vector3f m2 = get_motion_vector(i2, i3, 0);
+    return fabs(m1.dot(m2));
+  }
 };
 
 float get_best_scaling_factor(nvm_file &f1, nvm_file &f2) {
