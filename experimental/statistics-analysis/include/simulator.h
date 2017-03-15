@@ -4,6 +4,12 @@
 #include "common.h"
 #include <GL/freeglut.h>
 #include <iostream>
+#include <GL/glut.h>    // Header File For The GLUT Library 
+#include <GL/gl.h>	// Header File For The OpenGL32 Library
+#include <GL/glu.h>	// Header File For The GLu32 Library
+#include <stdio.h>      // Header file for standard file i/o.
+#include <stdlib.h>     // Header file for malloc/free.
+#include <unistd.h>
 
 void getImage(cv::Mat &image);
 

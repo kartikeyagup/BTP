@@ -42,23 +42,20 @@ find_package(OpenCV REQUIRED)
 #########################################################
 # FIND GFLAGS
 #########################################################
-find_package(gflags REQUIRED)
+# find_package(gflags REQUIRED)
 #########################################################
 # Include Files
 #########################################################
-include_directories(${OpenCV_INCLUDE_DIRS} include)
+include_directories(${OpenCV_INCLUDE_DIRS} include /usr/include/eigen3/)
 
-# add_library(common-cc src/common.cc)
 add_library(helpers-cc src/simulator.cc
                          src/common.cc
                          src/statistics.cc
                          src/triangulate.cc)
 
-
 add_executable(sensitivity scripts/sensitivity.cpp)
-target_link_libraries(sensitivity  
-                           helpers-cc)
 target_link_libraries(sensitivity ${OPENGL_LIBRARIES} 
-                           ${GLUT_LIBRARY} 
+                           helpers-cc
+                           glut GL GLU
                            ${OpenCV_LIBS}
                            gflags)
