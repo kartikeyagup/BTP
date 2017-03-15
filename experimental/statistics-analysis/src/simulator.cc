@@ -127,7 +127,7 @@ void LoadGLTextures() {
   exit(0);
     }
 
-    if (!ImageLoad("/home/skipper/Desktop/lesson06/Data/lesson6/NeHe3.bmp", image1)) {
+    if (!ImageLoad("pattern.bmp", image1)) {
   exit(1);
     }        
 
