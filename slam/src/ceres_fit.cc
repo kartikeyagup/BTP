@@ -167,9 +167,9 @@ void optimize(int type, plane& rf, plane& lft, plane& rt,
     }
   }
 
-  std::cout << "Left points changed from " << pts_left.size() << " to ";
+  // std::cout << "Left points changed from " << pts_left.size() << " to ";
   pts_left = newleft;
-  std::cout << pts_left.size() << "\n";
+  // std::cout << pts_left.size() << "\n";
   pts_right = newright;
   pts_rf = newroof;
 

@@ -97,7 +97,7 @@ struct corridor {
   corridor(nvm_file f, int st, int end) {
     std::cout << "Fitting corridor from " << st << " to " << end << "\n";
     mxdistance = f.mdistance_1(st, end);
-    std::cout << mxdistance << " is the distance\n";
+    // std::cout << mxdistance << " is the distance\n";
     // std::cout << f.distance_kf(st, end - 1) << "\n";
     // f.reset_origin(st);
     f.get_points(st, end, rem_points, trajectory, rotations, focals);
@@ -106,18 +106,18 @@ struct corridor {
   void initPlanes(CorType c, plane p1, plane p2, plane p3, Eigen::Matrix3f rot,
                   cv::Point3f pos) {
     Eigen::Matrix3f rotT = rot.transpose();
-    std::cout << "Prev Roof " << p1 << "\n";
-    std::cout << "Prev Right " << p2 << "\n";
-    std::cout << "Prev Left " << p3 << "\n";
+    // std::cout << "Prev Roof " << p1 << "\n";
+    // std::cout << "Prev Right " << p2 << "\n";
+    // std::cout << "Prev Left " << p3 << "\n";
     // p1.shift(-pos);
     // p2.shift(-pos);
     // p3.shift(-pos);
     // p1.rotate(rotT);
     // p2.rotate(rotT);
     // p3.rotate(rotT);
-    std::cout << "Roof " << p1 << "\n";
-    std::cout << "Right " << p2 << "\n";
-    std::cout << "Left " << p3 << "\n";
+    // std::cout << "Roof " << p1 << "\n";
+    // std::cout << "Right " << p2 << "\n";
+    // std::cout << "Left " << p3 << "\n";
 
     plane_1 = p1;
 
@@ -146,6 +146,15 @@ struct corridor {
     return answer;
   }
 
+  Eigen::Vector3f GetRoofNormal() {
+    Eigen::Vector3f answer;
+    answer(0, 0) = plane_1.a;
+    answer(1, 0) = plane_1.b;
+    answer(2, 0) = plane_1.c;
+    answer.normalize();
+    return answer;
+  }
+
   void basicInit() {
     ctype = straight;
     plane p1, p2, p3;
@@ -155,7 +164,7 @@ struct corridor {
     float dp12 = fabs(p1.dotp(p2));
     float dp13 = fabs(p1.dotp(p3));
     float dp23 = fabs(p2.dotp(p3));
-    std::cout << dp12 << "\t" << dp23 << "\t" << dp13 << "\n";
+    // std::cout << dp12 << "\t" << dp23 << "\t" << dp13 << "\n";
     if (dp12 > dp23 and dp12 > dp13) {
       // 3 is the roof
       plane_1 = p3;
@@ -225,8 +234,14 @@ struct corridor {
   }
 
   float get_height() {
-    // TODO: Average Height
-    float answer = plane_1.distance(trajectory[0]);
+    std::vector<float> distances;
+    for (int i = 0; i < trajectory.size(); i++) {
+      distances.push_back(plane_1.distance(trajectory[i]));
+    }
+    std::nth_element(distances.begin(),
+                     distances.begin() + (distances.size() / 2),
+                     distances.end());
+    float answer = distances[distances.size() / 2];
     return answer;
   }
 
@@ -350,32 +365,55 @@ Eigen::Matrix3f GetRotMatrix(Eigen::Vector3f dest, Eigen::Vector3f src) {
 void fix_corridor(corridor &c1, corridor &c2, int angle) {
   if (angle == 0) {
     // Straight merging
+    std::cout << "Straight merging\n";
     float width2 = c2.get_width();
     float width1 = c1.get_width();
-    std::cout << width1 << "\t" << width2 << "\n";
+    // std::cout << width1 << "\t" << width2 << "\n";
     c2.scale(width1 / width2);
 
-    Eigen::Vector3f axis1, axis2;
+    Eigen::Vector3f axis1, axis2, roof1, roof2;
     axis1 = c1.GetAxis();
     axis2 = c2.GetAxis();
-    std::cout << "Axis 1" << axis1 << "\n";
-    std::cout << "Axis 2" << axis2 << "\n";
+    if (axis2.dot(axis1) < 0) {
+      axis2 *= -1;
+    }
+    // std::cout << "Striaght Axis 1 " << axis1 << "\n";
+    // std::cout << "Striaght Axis 2 " << axis2 << "\n";
     Eigen::Matrix3f rot = GetRotMatrix(axis1, axis2);
     c2.rotate(rot);
-    axis1 = c1.GetAxis();
-    axis2 = c2.GetAxis();
-    std::cout << "Axis 1" << axis1 << "\n";
-    std::cout << "Axis 2" << axis2 << "\n";
+    // axis1 = c1.GetAxis();
+    // axis2 = c2.GetAxis();
+    // std::cout << "Striaght Axis 1 " << axis1 << "\n";
+    // std::cout << "Striaght Axis 2 " << axis2 << "\n";
+    roof1 = c1.GetRoofNormal();
+    roof2 = c2.GetRoofNormal();
+    if (roof2.dot(roof1) < 0) {
+      roof2 *= -1;
+    }
+    // std::cout << "Striaght Roof 1 " << roof1 << "\n";
+    // std::cout << "Striaght Roof 2 " << roof2 << "\n";
+
+    Eigen::Matrix3f rot2 = GetRotMatrix(roof1, roof2);
+    c2.rotate(rot2);
+    // axis1 = c1.GetAxis();
+    // axis2 = c2.GetAxis();
+    // roof1 = c1.GetRoofNormal();
+    // roof2 = c2.GetRoofNormal();
+    // std::cout << "Striaght Roof 1 After Transform" << roof1 << "\n";
+    // std::cout << "Striaght Roof 2 After Transform" << roof2 << "\n";
+    // std::cout << "Striaght Axis 1 After All Transforms" << axis1 << "\n";
+    // std::cout << "Striaght Axis 2 After All Transforms" << axis2 << "\n";
 
     c2.shift(c1.trajectory[c1.trajectory.size() - 1] - c2.trajectory[0]);
 
   } else {
     // Turn merging
+    std::cout << "Turn merging\n";
     float height2 = c2.get_height();
     float height1 = c1.get_height();
-    std::cout << height1 << "\t" << height2 << "\n";
+    // std::cout << height1 << "\t" << height2 << "\n";
     c2.scale(height1 / height2);
-    Eigen::Vector3f axis1, axis2;
+    Eigen::Vector3f axis1, axis2, roof1, roof2;
     axis1 = c1.GetAxis();
     axis2 = c2.GetWallNormal();
     if (axis2.dot(axis1) < 0) {
@@ -383,6 +421,17 @@ void fix_corridor(corridor &c1, corridor &c2, int angle) {
     }
     Eigen::Matrix3f rot = GetRotMatrix(axis1, axis2);
     c2.rotate(rot);
+
+    roof1 = c1.GetRoofNormal();
+    roof2 = c2.GetRoofNormal();
+    if (roof2.dot(roof1) < 0) {
+      roof2 *= -1;
+    }
+    // std::cout << "Turning Roof 1 " << roof1 << "\n";
+    // std::cout << "Turning Roof 2 " << roof2 << "\n";
+
+    Eigen::Matrix3f rot2 = GetRotMatrix(roof1, roof2);
+    c2.rotate(rot2);
     c2.shift(c1.trajectory[c1.trajectory.size() - 1] - c2.trajectory[0]);
   }
 }
@@ -462,7 +511,7 @@ corridor merge_corridor(corridor c1, corridor c2, int angle) {
   }
   // Shifting
   c2.shift(c1.trajectory[c1.trajectory.size() - 1]);
-  std::cout << c1.get_width() << ", " << c2.get_width() << "\n";
+  // std::cout << c1.get_width() << ", " << c2.get_width() << "\n";
   for (int i = 0; i < c2.points_1.size(); i++) {
     answer.points_1.push_back(c2.points_1[i]);
   }
