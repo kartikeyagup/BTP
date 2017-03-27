@@ -9,3 +9,5 @@ data*/
 epipolar/
 grid.txt
 btp/
+*.ply
+*.nvm
