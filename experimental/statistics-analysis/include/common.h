@@ -83,7 +83,8 @@ struct triangulation_bundle {
 
 void UpdatePosition(camera_frame &frame, 
   float distance, motion_type direction);
-
+void UpdatePosition1(camera_frame &frame, 
+  float t);
 float getColorR(int i, int j);
 float getColorG(int i, int j);
 float getColorB(int i, int j);

@@ -16,11 +16,8 @@ void getImage(cv::Mat &image) {
 /* The number of our GLUT window */
 int window; 
 
-/* floats for x rotation, y rotation, z rotation */
-float xrot, yrot, zrot;
-
 /* storage for one texture  */
-unsigned int texture[1];
+unsigned int texture[2];
 
 /* Image type - contains height, width, and data */
 struct Image {
@@ -107,7 +104,7 @@ int ImageLoad(char *filename, Image *image) {
   image->data[i] = image->data[i+2];
   image->data[i+2] = temp;
     }
-    
+    fclose(file);
     // we're done.
     return 1;
 }
@@ -118,107 +115,86 @@ int ImageLoad(char *filename, Image *image) {
 
 void LoadGLTextures() { 
     // Load Texture
-    Image *image1;
+    Image *image1, *image2, *image3, *image4, *image5, *image6;
     
     // allocate space for texture
     image1 = (Image *) malloc(sizeof(Image));
+    image2 = (Image *) malloc(sizeof(Image));
+    
     if (image1 == NULL) {
   printf("Error allocating space for image");
   exit(0);
     }
+    if (image2 == NULL) {
+  printf("Error allocating space for image");
+  exit(0);
+    }
+  
+  image3 = (Image *) malloc(sizeof(Image));
+    image4 = (Image *) malloc(sizeof(Image));
+    image5 = (Image *) malloc(sizeof(Image));
+    image6 = (Image *) malloc(sizeof(Image));
+if (image3 == NULL) {
+  printf("Error allocating space for image");
+  exit(0);
+    }
+    if (image4 == NULL) {
+  printf("Error allocating space for image");
+  exit(0);
+    }
+    if (image5 == NULL) {
+  printf("Error allocating space for image");
+  exit(0);
+    }
+    if (image6 == NULL) {
+  printf("Error allocating space for image");
+  exit(0);
+    }
 
-    if (!ImageLoad("pattern.bmp", image1)) {
+    if (!ImageLoad("i1.bmp", image1)) {
   exit(1);
-    }        
-
+    }
+    if (!ImageLoad("i2.bmp", image2)) {
+  exit(1);
+    }
     // Create Texture 
     glGenTextures(1, &texture[0]);
     glBindTexture(GL_TEXTURE_2D, texture[0]);   // 2d texture (x and y size)
-
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR); // scale linearly when image bigger than texture
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR); // scale linearly when image smalled than texture
-
     // 2d texture, level of detail 0 (normal), 3 components (red, green, blue), x size from image, y size from image, 
     // border 0 (normal), rgb color data, unsigned byte data, and finally the data itself.
     glTexImage2D(GL_TEXTURE_2D, 0, 3, image1->sizeX, image1->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, image1->data);
+    // Create Texture 
+    glGenTextures(1, &texture[1]);
+    glBindTexture(GL_TEXTURE_2D, texture[1]);   // 2d texture (x and y size)
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR); // scale linearly when image bigger than texture
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR); // scale linearly when image smalled than texture
+    // 2d texture, level of detail 0 (normal), 3 components (red, green, blue), x size from image, y size from image, 
+    // border 0 (normal), rgb color data, unsigned byte data, and finally the data itself.
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, image2->sizeX, image2->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, image2->data);
+
 };
 
 
 
 
 // void DrawGLScene()
-void drawCube(int x, int y, int z, int size)
-
+void drawCube(int x, int y, int z, int size, int i)
 {
-    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);   // Clear The Screen And The Depth Buffer
-    // glLoadIdentity();       // Reset The View
-
     // glTranslatef(0.0f,0.0f,500.0f);              // move 5 units into the screen.
-    glColor3f(255,255,255);
-    
-    // glRotatef(xrot,1.0f,0.0f,0.0f);   // Rotate On The X Axis
-    // glRotatef(yrot,0.0f,1.0f,0.0f);   // Rotate On The Y Axis
-    // glRotatef(zrot,0.0f,0.0f,1.0f);   // Rotate On The Z Axis
-
-    glBindTexture(GL_TEXTURE_2D, texture[0]);   // choose the texture to use.
-
+    glColor3f(255,255,255);    
+    glBindTexture(GL_TEXTURE_2D, texture[i]);   // choose the texture to use.
     glBegin(GL_QUADS);                    // begin drawing a cube
-    
     // Front Face (note that the texture's corners have to match the quad's corners)
     glTexCoord2f(0.0f, 0.0f); glVertex3f(x-size/2, y-size/2,  z+size/2);  // Bottom Left Of The Texture and Quad
     glTexCoord2f(1.0f, 0.0f); glVertex3f(x+size/2, y-size/2,  z+size/2);  // Bottom Right Of The Texture and Quad
     glTexCoord2f(1.0f, 1.0f); glVertex3f(x+size/2,  y+size/2,  z+size/2);  // Top Right Of The Texture and Quad
     glTexCoord2f(0.0f, 1.0f); glVertex3f(x-size/2,  y+size/2,  z+size/2);  // Top Left Of The Texture and Quad
-    
-    // // Back Face
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f, -100.0f, z-size/2);  // Bottom Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f,  100.0f, z-size/2);  // Top Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f,  100.0f, z-size/2);  // Top Left Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f, -100.0f, z-size/2);  // Bottom Left Of The Texture and Quad
-  
-    // // // Top Face
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f,  100.0f, z-size/2);  // Top Left Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f,  100.0f,  100.0f);  // Bottom Left Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f,  100.0f,  100.0f);  // Bottom Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f,  100.0f, z-size/2);  // Top Right Of The Texture and Quad
-    
-    // // // Bottom Face       
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f, -100.0f, z-size/2);  // Top Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f, -100.0f, z-size/2);  // Top Left Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f, -100.0f,  100.0f);  // Bottom Left Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f, -100.0f,  100.0f);  // Bottom Right Of The Texture and Quad
-    
-    // // // Right face
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f, -100.0f, -100.0f);  // Bottom Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f,  100.0f, -100.0f);  // Top Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f,  100.0f,  100.0f);  // Top Left Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f( 100.0f, -100.0f,  100.0f);  // Bottom Left Of The Texture and Quad
-    
-    // // // Left Face
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f, -100.0f, -100.0f);  // Bottom Left Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f, -100.0f,  100.0f);  // Bottom Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f,  100.0f,  100.0f);  // Top Right Of The Texture and Quad
-    // glTexCoord2f(0.49f, 0.5f); glVertex3f(-100.0f,  100.0f, -100.0f);  // Top Left Of The Texture and Quad
-    
     glEnd();                                    // done with the polygon.
-
-    xrot+=15.0f;                    // X Axis Rotation  
-    yrot+=15.0f;                    // Y Axis Rotation
-    zrot+=15.0f;                    // Z Axis Rotation
-
     // since this is double buffered, swap the buffers to display what just got drawn.
     glutSwapBuffers();
 }
-
-
-// void drawCube(int x, int y, int z, int size)
-// {
-//     glPushMatrix();
-//     glColor3f(255,255,255);
-//     glTranslatef(x, y, z);
-//     glutSolidCube(size);
-//     glPopMatrix();
-// }
 
 void display(void) {
   int const window_width  = glutGet(GLUT_WINDOW_WIDTH);
@@ -237,7 +213,7 @@ void display(void) {
     glLoadIdentity();  
   } else {
     glLoadIdentity();
-    gluPerspective(120, 16.0/9.0, 100, 3000);
+    gluPerspective(120, 16.0/9.0, 1, 3000);
     gluLookAt(present_frame.position.x, 
       present_frame.position.y, 
       present_frame.position.z,
@@ -245,6 +221,9 @@ void display(void) {
       present_frame.position.y, 
       present_frame.position.z - 100 * cos(present_frame.rotation*PI/180),
       0,1,0);
+    /* // For fixed image
+    gluLookAt(-700,-500,500, 
+              0,0,0,0,1,0); */
   }
 
   // for (int i=0; i<5; i++) {
@@ -259,19 +238,13 @@ void display(void) {
   //   }
   // }
 
-  drawCube(0,0,-100,256);
-  drawCube(700, 500,0,128);
-  drawCube(0,500,-50,256);
-  drawCube(-400,50,100,128);
-  drawCube(500,-100,-200,512);
-  drawCube(-200,-200,200,128);
-  drawCube(-600,200,50,256);
-  // drawCube(200,-200,150,50);
-  // drawCube(-200,100,-100,50);
-  // drawCube(-150,-200,300,50);
-  
-
-
+  drawCube(0,0,-100,256,0);
+  drawCube(700, 500,0,128,1);
+  drawCube(0,500,-50,256,0);
+  drawCube(-400,50,100,128,1);
+  drawCube(500,-100,-200,512,0);
+  drawCube(-200,-200,200,128,1);
+  drawCube(-600,200,50,256,0);
   glutSwapBuffers();  
   glutPostRedisplay();
 }
@@ -293,15 +266,38 @@ void simulate_images(grid_params grid_description,
   glutDisplayFunc(display);
   glEnable(GL_DEPTH_TEST);
   LoadGLTextures();       // Load The Texture(s) 
+  std::cout << "Loaded all\n";
   glEnable(GL_TEXTURE_2D);      // Enable Texture Mapping
 
   present_frame.position = starting_point; 
   present_frame.rotation = angle;
   present_frame.intrinsics = intrinsics;
-  for (int i=0; i<num_images; i++) {
+  float t=0.0;
+  for (int i=0; i<num_images/2; i++) {
     glutMainLoopEvent();
     getImage(present_frame.image);
     output_frames.push_back(present_frame);
     UpdatePosition(present_frame, distance, motion);
+  }
+  for (int i=0; i<num_images/2; i++) {
+    glutMainLoopEvent();
+    getImage(present_frame.image);
+    output_frames.push_back(present_frame);
+    t = (i*1.0)/(num_images*7.0);
+    UpdatePosition1(present_frame, t);
+  }
+  for (int i=0; i<num_images/2; i++) {
+    glutMainLoopEvent();
+    getImage(present_frame.image);
+    output_frames.push_back(present_frame);
+    t = 1.0/14.0 - (i*1.0)/(num_images*7.0);
+    UpdatePosition1(present_frame, t);
+    // UpdatePosition(present_frame, -1.0*distance, motion);
+  }
+  for (int i=0; i<num_images/2; i++) {
+    glutMainLoopEvent();
+    getImage(present_frame.image);
+    output_frames.push_back(present_frame);
+    UpdatePosition(present_frame, -1.0*distance, motion);
   }
 };

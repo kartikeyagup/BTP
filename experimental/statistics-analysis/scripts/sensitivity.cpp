@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
         output_frames);    
 
     for (int i=0; i<output_frames.size(); i++) {
-        cv::imwrite("frame"+std::to_string(i)+".png", output_frames[i].image);
+        cv::imwrite("new"+std::to_string(i)+".png", output_frames[i].image);
     }
 
     // std::vector<std::vector<cv::Point3f> > triangulated = 
