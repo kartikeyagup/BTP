@@ -54,6 +54,7 @@ add_library(helpers-cc src/simulator.cc
                          src/triangulate.cc)
 
 add_executable(sensitivity scripts/sensitivity.cpp)
+add_executable(depths scripts/depths.cpp)
 target_link_libraries(sensitivity ${OPENGL_LIBRARIES} 
                            helpers-cc
                            glut GL GLU
