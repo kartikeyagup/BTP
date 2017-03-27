@@ -1,17 +1,17 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <gflags/gflags.h>
+#include <math.h>
+#include <stdlib.h>
 #include <Eigen/Dense>
+#include <fstream>
+#include <iostream>
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <string>
-#include <math.h>
-#include <iostream>
-#include <fstream>
-#include <stdlib.h>
-#include <gflags/gflags.h>
 
 #define PI 3.14159265
 
@@ -25,20 +25,16 @@ struct grid_params {
   }
 };
 
-enum motion_type {
-  FORWARD,
-  LEFT
-};
+enum motion_type { FORWARD, LEFT };
 
 struct camera_params {
   float f;
   float cx;
   float cy;
 
-  camera_params() { };
+  camera_params(){};
 
-  camera_params(float focal,
-    float centerx, float centery) {
+  camera_params(float focal, float centerx, float centery) {
     f = focal;
     cx = centerx;
     cy = centery;
@@ -57,8 +53,7 @@ struct camera_frame {
   cv::Point3f position;
   camera_params intrinsics;
 
-  camera_frame() {
-  };
+  camera_frame(){};
 
   camera_frame(const camera_frame &obj) {
     obj.image.copyTo(image);
@@ -72,19 +67,16 @@ struct triangulation_bundle {
   camera_frame camera;
   cv::Point2f pt;
 
-  triangulation_bundle() { };
+  triangulation_bundle(){};
 
-  triangulation_bundle(camera_frame cam, 
-    cv::Point2f point) {
+  triangulation_bundle(camera_frame cam, cv::Point2f point) {
     camera = cam;
     pt = point;
   }
 };
 
-void UpdatePosition(camera_frame &frame, 
-  float distance, motion_type direction);
-void UpdatePosition1(camera_frame &frame, 
-  float t);
+void UpdatePosition(camera_frame &frame, float distance, motion_type direction);
+void UpdatePosition1(camera_frame &frame, float t);
 float getColorR(int i, int j);
 float getColorG(int i, int j);
 float getColorB(int i, int j);

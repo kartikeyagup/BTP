@@ -4,7 +4,7 @@
 #include "common.h"
 
 std::vector<std::vector<cv::Point3f> > detect_triangulate(
-  std::vector<camera_frame> camera_frames);
+    std::vector<camera_frame> camera_frames);
 
 void ConvertPoint(triangulation_bundle &bundle);
 
