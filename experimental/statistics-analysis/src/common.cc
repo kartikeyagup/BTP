@@ -18,6 +18,14 @@ void UpdatePosition(camera_frame &frame,
   frame.position.z += dz*distance;
 }
 
+void UpdatePosition1(camera_frame &frame, 
+  float t) {
+  float theta = t;
+  frame.position.z = 400.0 +600*t;
+  frame.position.x = 600*t;
+  frame.rotation = (theta*180.0)/3.14;
+}
+
 float getColorR(int i, int j) {
   return 0.1 + i*0.18;
 }
