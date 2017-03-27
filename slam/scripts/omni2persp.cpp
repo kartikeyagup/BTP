@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
     cv::Mat image;
     inputVideo.read(image);
     if (image.empty()) {
-      if (grabber_counter >= 42)
+      if (grabber_counter >= 200)
         break;
       continue;
     }

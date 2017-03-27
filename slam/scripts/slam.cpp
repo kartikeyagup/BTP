@@ -28,23 +28,28 @@ DEFINE_int32(min_corners, 12000, "Minimum number of points in image below which 
 DEFINE_bool(corres, false, "Dump image correspondances");
 DEFINE_bool(undistort, false, "Undistort the images");
 DEFINE_bool(use_sift, false, "Use sift for corresponances");
+DEFINE_bool(clear_non_kf, true, "Remove non kf images");
 
 // float focal = 424.153/1280;
 // float focal = 516.5/640;
 // float focal = 1701.0/1920;
-// float focal = 707.0/1226; // KITTI
-// float focal = 538.918/640.0; // TUM
-float focal = 428.582/1280; // climbing hyper 
+// float focal = 707.09/1226; // KITTI
+// float focal = 538.918/640.0; // TUM fr3
+// float focal = 518.1/640.0; // TUM fr1
+// float focal = 522.2/640.0; // TUM fr2
+// float focal = 428.582/1280; // climbing hyper 
+// float focal = 1237.14/1101;
+// float focal = 1153.12/960; // camvid
+float focal = 207.846/1280; // simulated
 int cx = 640;
 int cy = 360;
 constexpr int windows_size = 5;
-int frameskip=1;
-int maxCorners = 100000;
-double qualityLevel = 0.001;
-double minDistance = 2;
-int blockSize = 7;
-bool useHarrisDetector = false;
-double k = 0.04;
+constexpr int maxCorners = 100000;
+constexpr double qualityLevel = 0.001;
+constexpr double minDistance = 2;
+constexpr int blockSize = 7;
+constexpr bool useHarrisDetector = false;
+constexpr double k = 0.04;
 cv::Size winSize(15, 15);
 cv::TermCriteria termcrit(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS, 10, 0.03);
 
@@ -58,7 +63,8 @@ int main(int argc, char **argv)
   if (!cap.isOpened())
       return 1;
   cv::namedWindow("new", 0);
-  
+  cv::namedWindow("mask", 1);
+
   int numoutmatches; 
   int framid = 0;
   int prevframe = 0;
@@ -74,6 +80,7 @@ int main(int argc, char **argv)
   std::vector<std::vector<int> > fileids;
   std::vector<std::unordered_map<int, bool> > all_files;
   int siftlatest=0;
+  std::unordered_map<int, bool> required_images;
   FishOcam cam_model;
   if (FLAGS_undistort) {
     cam_model.init(FLAGS_calib);
@@ -90,7 +97,7 @@ int main(int argc, char **argv)
   while (true) {
     cap.read(rawFrame);
     if (rawFrame.empty()) {
-      if (rc>20)
+      if (rc>200)
        break;
       rc++;
       continue;
@@ -99,10 +106,9 @@ int main(int argc, char **argv)
     if (FLAGS_undistort) {
       cv::Mat undistorted;
       cam_model.WarpImage(rawFrame, undistorted);
-      // undistort(rawFrame);
       undistorted.copyTo(rawFrame);
     }
-    // if (framid%10 == 0)
+    required_images[framid] = true;
     std::cout << "\rOn frame id: " << framid << " and tracking " << corners.size() << " points" << std::flush;
     cv::cvtColor(rawFrame, newFrame, CV_RGBA2GRAY);
     if (framid == 0) {
@@ -196,9 +202,11 @@ int main(int argc, char **argv)
 
     if ((framid %5 == 0) || (corners_prev.size() < FLAGS_min_corners)) {
       mask = cv::Mat::ones(oldFrame.size(), CV_8UC1);
+      cv::circle(mask, cv::Point2f(cx,cy), 1000, cv::Scalar(255), -1);
       for (int i=0; i<corners_prev.size(); i++) {
         cv::circle(mask, corners_prev[i], 3, cv::Scalar(0), -1);
       }
+      cv::imshow("mask", mask);
       std::vector<cv::Point2f> newcorners;
       cv::goodFeaturesToTrack(oldFrame,
         newcorners, 
@@ -248,17 +256,17 @@ int main(int argc, char **argv)
       fileids.push_back(std::vector<int> ());
     }
     corr compressed = all_corr[i];
-    // std::cerr << "Init delta at " << compressed.frame_1 << "\t" << compressed.delta << "\n";
     for (int j=1; j<corres_skip && (i+j<all_corr.size()) && WithinRange(compressed); j++) {
       compressed = CompressCorr(compressed, all_corr[i+j]);
     }
-    // std::cerr << "Final delta at " << compressed.frame_2 << "\t" << compressed.delta << "\n";
     i=compressed.frame_2;
 
     if (FLAGS_corres) {
       ShowCorres(FLAGS_dirname, compressed);
     }
-    
+    required_images[compressed.frame_1] = false;
+    required_images[compressed.frame_2] = false;
+
     if (all_files[Chunks.size()-1].find(compressed.frame_1)==all_files[Chunks.size()-1].end())
       fileids[Chunks.size()-1].push_back(compressed.frame_1);
     if (all_files[Chunks.size()-1].find(compressed.frame_2)==all_files[Chunks.size()-1].end())
@@ -312,7 +320,6 @@ int main(int argc, char **argv)
     std::cout << "Done with 2nd round of compression\n";
     numoutmatches = 0;
     for (int i=0; i<all_corr.size(); i++) {
-      // std::cerr << "Processing " << i << " out of " << all_corr.size() << "\n";
       TwoViewInfo twoview_info;
       std::vector<int> inliers;
       if (GetEssentialRT(all_corr[i], twoview_info, inliers, options, focal)) {
@@ -437,5 +444,14 @@ int main(int argc, char **argv)
   listfocalglobal << "img_" << *((*fileids.rbegin()).rbegin()) << ".jpg " << focal << "\n";
   listfocalglobal.close();
   inifile.close();
+  
+  if (FLAGS_clear_non_kf) {
+    for (auto it:required_images) {
+      if (it.second) {
+        system(("rm -f " + FLAGS_dirname + "/img_" + std::to_string(it.first) + ".jpg").c_str());
+      }
+    }
+  }
+
   return 0;
 }
