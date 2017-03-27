@@ -1,1 +1,13 @@
 *.pyc
+build/
+.clang_complete
+data/
+tempdir/
+data*/
+*.mp4
+*.MP4
+epipolar/
+grid.txt
+btp/
+*.ply
+*.nvm
