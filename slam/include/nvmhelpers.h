@@ -154,10 +154,6 @@ struct nvm_file {
         nvm_file >> corr_data[i].corr[j].imgid >> corr_data[i].corr[j].siftid >>
             corr_data[i].corr[j].img_location.x >>
             corr_data[i].corr[j].img_location.y;
-        // if (corr_data[i].corr[j].siftid != corr_data[i].corr[0].siftid)
-        //   std::cout << j << "\t" << corr_data[i].corr[j].siftid << "\t"
-        //             << corr_data[i].corr[0].siftid << "\n";
-        // assert(corr_data[i].corr[j].siftid == corr_data[i].corr[0].siftid);
       }
     }
     std::cout << "Number of corrs: " << corr_data.size() << "\n";
@@ -206,48 +202,6 @@ struct nvm_file {
             new_map[old_map[corr_data[i].corr[j].imgid]];
       }
     }
-  }
-
-  void NormaliseScale(float scf) {
-    for (int i = 0; i < kf_data.size(); i++) {
-      kf_data[i].translation *= scf;
-    }
-
-    for (int i = 0; i < corr_data.size(); i++) {
-      corr_data[i].point_3d *= scf;
-    }
-  }
-
-  void NormaliseRotation(Eigen::Matrix3f rot) {
-    Eigen::Matrix3f rot_t = rot.transpose();
-    for (int i = 0; i < kf_data.size(); i++) {
-      kf_data[i].rotation = kf_data[i].rotation * rot_t;
-      kf_data[i].translation = rot * kf_data[i].translation;
-    }
-
-    for (int i = 0; i < corr_data.size(); i++) {
-      corr_data[i].point_3d = rot * corr_data[i].point_3d;
-    }
-  }
-
-  void NormaliseTranslation(Eigen::Vector3f trans) {
-    for (int i = 0; i < kf_data.size(); i++) {
-      kf_data[i].translation -= trans;
-    }
-
-    for (int i = 0; i < corr_data.size(); i++) {
-      corr_data[i].point_3d -= trans;
-    }
-  }
-
-  void NormaliseInternalRotation(int id) {
-    assert(id >= 0 and id < kf_data.size());
-    NormaliseRotation(kf_data[id].rotation);
-  }
-
-  void NormaliseInternalTranslation(int id) {
-    assert(id >= 0 and id < kf_data.size());
-    NormaliseTranslation(kf_data[id].translation);
   }
 
   void save_to_disk(std::string path) {
@@ -384,6 +338,15 @@ struct nvm_file {
     nvmfile.close();
   }
 
+  Eigen::Vector3f get_translation_vector(int f1, int f2) {
+    Eigen::Vector3f p1 = get_camera_position(f1);
+    Eigen::Vector3f p2 = get_camera_position(f2);
+    Eigen::Vector3f ans = p2-p1;
+    std::cout << ans << "\n";
+    ans.normalize();
+    return ans;
+  }
+
   void get_points(int lowerbound, int upperbound,
                   std::vector<cv::Point3f> &pointsfound,
                   std::vector<cv::Point3f> &trajectory,
@@ -409,18 +372,7 @@ struct nvm_file {
     }
   }
 
-  void reset_origin(int index) {
-    Eigen::Vector3f location =
-        -kf_data[index].rotation.transpose() * kf_data[index].translation;
-    for (int i = 0; i < corr_data.size(); i++) {
-      corr_data[i].point_3d -= location;
-    }
-    for (int i = 0; i < kf_data.size(); i++) {
-      kf_data[i].translation =
-          kf_data[i].translation + kf_data[i].rotation * location;
-    }
-    Eigen::Matrix3f rotT = kf_data[index].rotation.transpose();
-    Eigen::Matrix3f rot = kf_data[index].rotation.transpose();
+  void rotate(Eigen::Matrix3f rot, Eigen::Matrix3f rotT) {
     for (int i = 0; i < corr_data.size(); i++) {
       corr_data[i].point_3d = rot * corr_data[i].point_3d;
     }
@@ -431,6 +383,37 @@ struct nvm_file {
       kf_data[i].rotation = kf_data[i].rotation * rotT;
       kf_data[i].translation = -kf_data[i].rotation * kf_data[i].translation;
     }
+  }
+
+  void reset_origin(int index) {
+    Eigen::Matrix3f rotT = kf_data[index].rotation.transpose();
+    Eigen::Matrix3f rot = kf_data[index].rotation.transpose();
+    rotate(rot, rotT);
+    Eigen::Vector3f location =
+        -kf_data[index].rotation.transpose() * kf_data[index].translation;
+    for (int i = 0; i < corr_data.size(); i++) {
+      corr_data[i].point_3d -= location;
+    }
+    for (int i = 0; i < kf_data.size(); i++) {
+      kf_data[i].translation =
+          kf_data[i].translation + kf_data[i].rotation * location;
+    }
+  }
+
+  void reset_coord(int f1, int f2) {
+    Eigen::Vector3f t1 = get_translation_vector(f1, f2);
+    std::cout << t1 << "\n";
+    float dotp = t1(2,0);
+    float theta = acos(dotp);
+    Eigen::Matrix3f rmat;
+    rmat.setZero();
+    rmat(0,0) = 1.0;
+    rmat(1,1) = cos(theta);
+    rmat(2,2) = cos(theta);
+    rmat(1,2) = -sin(theta);
+    rmat(2,1) = sin(theta);
+    std::cout << rmat << "\n";
+    rotate(rmat, rmat.transpose());
   }
 
   float mdistance() {

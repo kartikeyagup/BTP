@@ -20,6 +20,45 @@ void fitPoints(std::vector<cv::Point3f> &ap, std::vector<cv::Point3f> &fit,
   ap = rem;
 }
 
+void get_roadpoints(std::vector<cv::Point3f> &rd, std::vector<cv::Point3f> &allpt) {
+  std::vector<cv::Point3f> rem;
+  for (auto it: allpt) {
+    if (it.y > 0) {
+      rd.push_back(it);
+    } else {
+      rem.push_back(it);
+    }
+  }
+  allpt = rem;
+} 
+
+void get_sidepoints(std::vector<cv::Point3f> &ps, std::vector<cv::Point3f> &rem_points, int side) {
+  std::vector<cv::Point3f> rem;
+  for (auto it:rem_points) {
+    if (side==0) {
+      if (it.x>0) {
+        ps.push_back(it);
+      } else {
+        rem.push_back(it);
+      }
+    } else {
+      if (it.x<0) {
+        ps.push_back(it);
+      } else {
+        rem.push_back(it);
+      }
+    }
+  }
+  std::cout << ps.size() << "\t is the number of points in side out of " << rem_points.size() << "\n";
+  rem_points = rem;
+}
+
+void joinpts(std::vector<cv::Point3f> &rem_points, std::vector<cv::Point3f> &bottom_pts) {
+  for (auto it:bottom_pts) {
+    rem_points.push_back(it);
+  }
+}
+
 struct corridor {
   CorType ctype;
   float mxdistance;
@@ -106,18 +145,6 @@ struct corridor {
   void initPlanes(CorType c, plane p1, plane p2, plane p3, Eigen::Matrix3f rot,
                   cv::Point3f pos) {
     Eigen::Matrix3f rotT = rot.transpose();
-    // std::cout << "Prev Roof " << p1 << "\n";
-    // std::cout << "Prev Right " << p2 << "\n";
-    // std::cout << "Prev Left " << p3 << "\n";
-    // p1.shift(-pos);
-    // p2.shift(-pos);
-    // p3.shift(-pos);
-    // p1.rotate(rotT);
-    // p2.rotate(rotT);
-    // p3.rotate(rotT);
-    // std::cout << "Roof " << p1 << "\n";
-    // std::cout << "Right " << p2 << "\n";
-    // std::cout << "Left " << p3 << "\n";
 
     plane_1 = p1;
 
@@ -155,62 +182,78 @@ struct corridor {
     return answer;
   }
 
-  void basicInit() {
-    ctype = straight;
-    plane p1, p2, p3;
-    std::vector<cv::Point3f> plane1, plane2, plane3;
-    fit3Planes(rem_points, plane1, plane2, plane3, p1, p2, p3,
-               0.8 * mxdistance);
-    float dp12 = fabs(p1.dotp(p2));
-    float dp13 = fabs(p1.dotp(p3));
-    float dp23 = fabs(p2.dotp(p3));
-    // std::cout << dp12 << "\t" << dp23 << "\t" << dp13 << "\n";
-    if (dp12 > dp23 and dp12 > dp13) {
-      // 3 is the roof
-      plane_1 = p3;
-      points_1 = plane3;
-      if (p1.d / p1.a > 0.0) {
-        plane_3 = p1;
-        plane_2 = p2;
-        points_3 = plane1;
-        points_2 = plane2;
+  void basicInit(int tp=0) {
+    if (tp==0) {
+      ctype = straight;
+      plane p1, p2, p3;
+      std::vector<cv::Point3f> plane1, plane2, plane3;
+      fit3Planes(rem_points, plane1, plane2, plane3, p1, p2, p3,
+                 0.8 * mxdistance);
+      float dp12 = fabs(p1.dotp(p2));
+      float dp13 = fabs(p1.dotp(p3));
+      float dp23 = fabs(p2.dotp(p3));
+      // std::cout << dp12 << "\t" << dp23 << "\t" << dp13 << "\n";
+      if (dp12 > dp23 and dp12 > dp13) {
+        // 3 is the roof
+        plane_1 = p3;
+        points_1 = plane3;
+        if (p1.d / p1.a > 0.0) {
+          plane_3 = p1;
+          plane_2 = p2;
+          points_3 = plane1;
+          points_2 = plane2;
+        } else {
+          plane_3 = p2;
+          plane_2 = p1;
+          points_3 = plane2;
+          points_2 = plane1;
+        }
+      } else if (dp13 > dp23 and dp13 > dp12) {
+        // std::cout << "Setting 2 as roof\n";
+        // 2 is the roof
+        plane_1 = p2;
+        points_1 = plane2;
+        if (p1.d / p1.a > 0.0) {
+          plane_3 = p1;
+          plane_2 = p3;
+          points_3 = plane1;
+          points_2 = plane3;
+        } else {
+          plane_3 = p3;
+          plane_2 = p1;
+          points_3 = plane3;
+          points_2 = plane1;
+        }
       } else {
-        plane_3 = p2;
-        plane_2 = p1;
-        points_3 = plane2;
-        points_2 = plane1;
-      }
-    } else if (dp13 > dp23 and dp13 > dp12) {
-      // std::cout << "Setting 2 as roof\n";
-      // 2 is the roof
-      plane_1 = p2;
-      points_1 = plane2;
-      if (p1.d / p1.a > 0.0) {
-        plane_3 = p1;
-        plane_2 = p3;
-        points_3 = plane1;
-        points_2 = plane3;
-      } else {
-        plane_3 = p3;
-        plane_2 = p1;
-        points_3 = plane3;
-        points_2 = plane1;
+        // 1 is the roof
+        plane_1 = p1;
+        points_1 = plane1;
+        if (p2.d / p2.a > 0.0) {
+          plane_3 = p2;
+          plane_2 = p3;
+          points_3 = plane2;
+          points_2 = plane3;
+        } else {
+          plane_3 = p3;
+          plane_2 = p2;
+          points_3 = plane3;
+          points_2 = plane2;
+        }
       }
     } else {
-      // 1 is the roof
-      plane_1 = p1;
-      points_1 = plane1;
-      if (p2.d / p2.a > 0.0) {
-        plane_3 = p2;
-        plane_2 = p3;
-        points_3 = plane2;
-        points_2 = plane3;
-      } else {
-        plane_3 = p3;
-        plane_2 = p2;
-        points_3 = plane3;
-        points_2 = plane2;
-      }
+      // Road case
+      mxdistance /=2;
+      std::cout << "Fitting a road\n";
+      std::vector<cv::Point3f> bottom_pts, side1, side2;
+      get_roadpoints(bottom_pts, rem_points);
+      fitPlane(bottom_pts, points_1, plane_1, mxdistance);
+      joinpts(rem_points, bottom_pts);
+      get_sidepoints(side1, rem_points, 0);
+      fitPlane(side1, points_2, plane_2, mxdistance, true);
+      joinpts(rem_points, side1);
+      get_sidepoints(side2, rem_points, 1);
+      fitPlane(side2, points_3, plane_3, mxdistance, true);
+      joinpts(rem_points, side2);
     }
   }
 
@@ -377,33 +420,16 @@ void fix_corridor(corridor &c1, corridor &c2, int angle) {
     if (axis2.dot(axis1) < 0) {
       axis2 *= -1;
     }
-    // std::cout << "Striaght Axis 1 " << axis1 << "\n";
-    // std::cout << "Striaght Axis 2 " << axis2 << "\n";
     Eigen::Matrix3f rot = GetRotMatrix(axis1, axis2);
     c2.rotate(rot);
-    // axis1 = c1.GetAxis();
-    // axis2 = c2.GetAxis();
-    // std::cout << "Striaght Axis 1 " << axis1 << "\n";
-    // std::cout << "Striaght Axis 2 " << axis2 << "\n";
     roof1 = c1.GetRoofNormal();
     roof2 = c2.GetRoofNormal();
     if (roof2.dot(roof1) < 0) {
       roof2 *= -1;
     }
-    // std::cout << "Striaght Roof 1 " << roof1 << "\n";
-    // std::cout << "Striaght Roof 2 " << roof2 << "\n";
 
     Eigen::Matrix3f rot2 = GetRotMatrix(roof1, roof2);
     c2.rotate(rot2);
-    // axis1 = c1.GetAxis();
-    // axis2 = c2.GetAxis();
-    // roof1 = c1.GetRoofNormal();
-    // roof2 = c2.GetRoofNormal();
-    // std::cout << "Striaght Roof 1 After Transform" << roof1 << "\n";
-    // std::cout << "Striaght Roof 2 After Transform" << roof2 << "\n";
-    // std::cout << "Striaght Axis 1 After All Transforms" << axis1 << "\n";
-    // std::cout << "Striaght Axis 2 After All Transforms" << axis2 << "\n";
-
     c2.shift(c1.trajectory[c1.trajectory.size() - 1] - c2.trajectory[0]);
 
   } else {
