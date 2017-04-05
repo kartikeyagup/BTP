@@ -51,8 +51,6 @@ int main(int argc, char** argv) {
     if (dotprod < 0.5) {
       // Turn took place
       std::cout << "Turn happened\n";
-      // if (all_corridors[i - 1].ctype == straight) {
-      //   std::cout << "Previous was straight\n";
       motion_types.push_back(1);
       all_corridors[i].initPlanes(
           corner, all_corridors[i - 1].planes[0],
@@ -61,9 +59,6 @@ int main(int argc, char** argv) {
               .rotations[all_corridors[i - 1].rotations.size() - 1],
           all_corridors[i - 1]
               .trajectory[all_corridors[i - 1].trajectory.size() - 1]);
-      // } else {
-      //   // Previously we had corner block
-      // }
     } else {
       motion_types.push_back(0);
       // Straight corridor continuing

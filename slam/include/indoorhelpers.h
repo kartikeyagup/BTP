@@ -69,13 +69,7 @@ struct corridor {
   // 0 is roof, 1 is right, 2 is left
   std::vector<plane> planes;
   std::vector<std::vector<cv::Point3f> > points;
-  // plane plane_1;  // roof
-  // plane plane_2;  // right
-  // plane plane_3;  // left
   std::vector<cv::Point3f> rem_points;
-  // std::vector<cv::Point3f> kpoints_1;
-  // std::vector<cv::Point3f> kpoints_2;
-  // std::vector<cv::Point3f> kpoints_3;
   std::vector<cv::Point3f> trajectory;
   std::vector<Eigen::Matrix3f> rotations;
   std::vector<double> focals;
