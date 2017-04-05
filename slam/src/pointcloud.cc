@@ -2,7 +2,7 @@
 #include <unordered_set>
 
 void segment_Points(std::vector<cv::Point3f> &inputpoints,
-                    std::vector<int> &in_inliers, plane &p, float distance) {
+                    std::vector<int> &in_inliers, plane &p, float distance, bool side) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   // Fill in the cloud data
   cloud->width = inputpoints.size();
@@ -20,10 +20,20 @@ void segment_Points(std::vector<cv::Point3f> &inputpoints,
   pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
   // Create the segmentation object
   pcl::SACSegmentation<pcl::PointXYZ> seg;
+  if (side) {
+    std::cout << "Entered\n";
+    Eigen::Vector3f axis;
+    axis.setZero();
+    axis(0,0) = -1.0;
+    seg.setAxis(axis);
+    seg.setEpsAngle(10.0f*(M_PI)/180.0);
+    seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
+  } else {
+    seg.setModelType(pcl::SACMODEL_PLANE);
+  }
   // Optional
   seg.setOptimizeCoefficients(true);
   // Mandatory
-  seg.setModelType(pcl::SACMODEL_PLANE);
   seg.setMethodType(pcl::SAC_RANSAC);
   seg.setDistanceThreshold(distance);
 
@@ -64,9 +74,9 @@ std::vector<cv::Point3f> filterPoints(std::vector<cv::Point3f> &input,
 }
 
 void fitPlane(std::vector<cv::Point3f> &inpoints,
-              std::vector<cv::Point3f> &planepts, plane &p, float dist) {
+              std::vector<cv::Point3f> &planepts, plane &p, float dist, bool side) {
   std::vector<int> inliers1;
-  segment_Points(inpoints, inliers1, p, dist);
+  segment_Points(inpoints, inliers1, p, dist, side);
   std::vector<cv::Point3f> remaining_pts =
       filterPoints(inpoints, inliers1, planepts);
   inpoints = remaining_pts;
