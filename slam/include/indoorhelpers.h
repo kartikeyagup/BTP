@@ -20,9 +20,10 @@ void fitPoints(std::vector<cv::Point3f> &ap, std::vector<cv::Point3f> &fit,
   ap = rem;
 }
 
-void get_roadpoints(std::vector<cv::Point3f> &rd, std::vector<cv::Point3f> &allpt) {
+void get_roadpoints(std::vector<cv::Point3f> &rd,
+                    std::vector<cv::Point3f> &allpt) {
   std::vector<cv::Point3f> rem;
-  for (auto it: allpt) {
+  for (auto it : allpt) {
     if (it.y > 0) {
       rd.push_back(it);
     } else {
@@ -30,31 +31,34 @@ void get_roadpoints(std::vector<cv::Point3f> &rd, std::vector<cv::Point3f> &allp
     }
   }
   allpt = rem;
-} 
+}
 
-void get_sidepoints(std::vector<cv::Point3f> &ps, std::vector<cv::Point3f> &rem_points, int side) {
+void get_sidepoints(std::vector<cv::Point3f> &ps,
+                    std::vector<cv::Point3f> &rem_points, int side) {
   std::vector<cv::Point3f> rem;
-  for (auto it:rem_points) {
-    if (side==0) {
-      if (it.x>0) {
+  for (auto it : rem_points) {
+    if (side == 0) {
+      if (it.x > 0) {
         ps.push_back(it);
       } else {
         rem.push_back(it);
       }
     } else {
-      if (it.x<0) {
+      if (it.x < 0) {
         ps.push_back(it);
       } else {
         rem.push_back(it);
       }
     }
   }
-  std::cout << ps.size() << "\t is the number of points in side out of " << rem_points.size() << "\n";
+  std::cout << ps.size() << "\t is the number of points in side out of "
+            << rem_points.size() << "\n";
   rem_points = rem;
 }
 
-void joinpts(std::vector<cv::Point3f> &rem_points, std::vector<cv::Point3f> &bottom_pts) {
-  for (auto it:bottom_pts) {
+void joinpts(std::vector<cv::Point3f> &rem_points,
+             std::vector<cv::Point3f> &bottom_pts) {
+  for (auto it : bottom_pts) {
     rem_points.push_back(it);
   }
 }
@@ -62,13 +66,16 @@ void joinpts(std::vector<cv::Point3f> &rem_points, std::vector<cv::Point3f> &bot
 struct corridor {
   CorType ctype;
   float mxdistance;
-  plane plane_1;  // roof
-  plane plane_2;  // right
-  plane plane_3;  // left
+  // 0 is roof, 1 is right, 2 is left
+  std::vector<plane> planes;
+  std::vector<std::vector<cv::Point3f> > points;
+  // plane plane_1;  // roof
+  // plane plane_2;  // right
+  // plane plane_3;  // left
   std::vector<cv::Point3f> rem_points;
-  std::vector<cv::Point3f> points_1;
-  std::vector<cv::Point3f> points_2;
-  std::vector<cv::Point3f> points_3;
+  // std::vector<cv::Point3f> kpoints_1;
+  // std::vector<cv::Point3f> kpoints_2;
+  // std::vector<cv::Point3f> kpoints_3;
   std::vector<cv::Point3f> trajectory;
   std::vector<Eigen::Matrix3f> rotations;
   std::vector<double> focals;
@@ -87,40 +94,35 @@ struct corridor {
         << rotations[i](2, 0) << " " << rotations[i](2, 1) << " "
         << rotations[i](2, 2) << "\n";
     }
-    f << plane_1.a << " " << plane_1.b << " " << plane_1.c << " " << plane_1.d
-      << "\n";
-    f << points_1.size() << "\n";
-    for (int i = 0; i < points_1.size(); i++) {
-      f << points_1[i].x << " " << points_1[i].y << " " << points_1[i].z
-        << "\n";
-    }
-    f << plane_2.a << " " << plane_2.b << " " << plane_2.c << " " << plane_2.d
-      << "\n";
-    f << points_2.size() << "\n";
-    for (int i = 0; i < points_2.size(); i++) {
-      f << points_2[i].x << " " << points_2[i].y << " " << points_2[i].z
-        << "\n";
-    }
-    f << plane_3.a << " " << plane_3.b << " " << plane_3.c << " " << plane_3.d
-      << "\n";
-    f << points_3.size() << "\n";
-    for (int i = 0; i < points_3.size(); i++) {
-      f << points_3[i].x << " " << points_3[i].y << " " << points_3[i].z
-        << "\n";
+    for (int id = 0; id < planes.size(); id++) {
+      f << planes[id].a << " " << planes[id].b << " " << planes[id].c << " "
+        << planes[id].d << "\n";
+      f << points[id].size() << "\n";
+      for (int i = 0; i < points[id].size(); i++) {
+        f << points[id][i].x << " " << points[id][i].y << " " << points[id][i].z
+          << "\n";
+      }
     }
     f.close();
   }
 
   void WritePly(std::string path) {
     nvm_file temp;
-    for (int i = 0; i < points_1.size(); i++) {
-      temp.corr_data.push_back(Corr3D(points_1[i], cv::Point3i(255, 0, 0)));
+    for (int i = 0; i < points[0].size(); i++) {
+      temp.corr_data.push_back(Corr3D(points[0][i], cv::Point3i(255, 0, 0)));
     }
-    for (int i = 0; i < points_2.size(); i++) {
-      temp.corr_data.push_back(Corr3D(points_2[i], cv::Point3i(0, 255, 0)));
+    for (int i = 0; i < points[1].size(); i++) {
+      temp.corr_data.push_back(Corr3D(points[1][i], cv::Point3i(0, 255, 0)));
     }
-    for (int i = 0; i < points_3.size(); i++) {
-      temp.corr_data.push_back(Corr3D(points_3[i], cv::Point3i(0, 0, 255)));
+    for (int i = 0; i < points[2].size(); i++) {
+      temp.corr_data.push_back(Corr3D(points[2][i], cv::Point3i(0, 0, 255)));
+    }
+    for (int id = 3; id < points.size(); id++) {
+      // All other planes
+      for (int i = 0; i < points[id].size(); i++) {
+        temp.corr_data.push_back(
+            Corr3D(points[id][i], cv::Point3i(0, 255, 255)));
+      }
     }
     for (int i = 0; i < rem_points.size(); i++) {
       temp.corr_data.push_back(Corr3D(rem_points[i], cv::Point3i(0, 0, 0)));
@@ -136,9 +138,9 @@ struct corridor {
   corridor(nvm_file f, int st, int end) {
     std::cout << "Fitting corridor from " << st << " to " << end << "\n";
     mxdistance = f.mdistance_1(st, end);
-    // std::cout << mxdistance << " is the distance\n";
-    // std::cout << f.distance_kf(st, end - 1) << "\n";
-    // f.reset_origin(st);
+    // Normal case has 3
+    planes.resize(3);
+    points.resize(3);
     f.get_points(st, end, rem_points, trajectory, rotations, focals);
   }
 
@@ -146,44 +148,44 @@ struct corridor {
                   cv::Point3f pos) {
     Eigen::Matrix3f rotT = rot.transpose();
 
-    plane_1 = p1;
+    planes[0] = p1;
 
     // TODO, add post cornertype
     ctype = c;
 
-    fitPoints(rem_points, points_1, p1, mxdistance * 1.5);
+    fitPoints(rem_points, points[0], p1, mxdistance * 1.5);
     if (c == straight) {
-      fitPoints(rem_points, points_2, p2, mxdistance * 1.5);
-      plane_2 = p2;
-      fitPoints(rem_points, points_3, p3, mxdistance * 1.5);
-      plane_3 = p3;
+      fitPoints(rem_points, points[1], p2, mxdistance * 1.5);
+      planes[1] = p2;
+      fitPoints(rem_points, points[2], p3, mxdistance * 1.5);
+      planes[2] = p3;
     } else {
       ctype = straight;
-      fitPlane(rem_points, points_2, plane_2, mxdistance);
-      fitPlane(rem_points, points_3, plane_3, mxdistance);
+      fitPlane(rem_points, points[1], planes[1], mxdistance);
+      fitPlane(rem_points, points[2], planes[2], mxdistance);
     }
   }
 
   Eigen::Vector3f GetWallNormal() {
     Eigen::Vector3f answer;
-    answer(0, 0) = plane_2.a;
-    answer(1, 0) = plane_2.b;
-    answer(2, 0) = plane_2.c;
+    answer(0, 0) = planes[1].a;
+    answer(1, 0) = planes[1].b;
+    answer(2, 0) = planes[1].c;
     answer.normalize();
     return answer;
   }
 
   Eigen::Vector3f GetRoofNormal() {
     Eigen::Vector3f answer;
-    answer(0, 0) = plane_1.a;
-    answer(1, 0) = plane_1.b;
-    answer(2, 0) = plane_1.c;
+    answer(0, 0) = planes[0].a;
+    answer(1, 0) = planes[0].b;
+    answer(2, 0) = planes[0].c;
     answer.normalize();
     return answer;
   }
 
-  void basicInit(int tp=0) {
-    if (tp==0) {
+  void basicInit(int tp = 0) {
+    if (tp == 0) {
       ctype = straight;
       plane p1, p2, p3;
       std::vector<cv::Point3f> plane1, plane2, plane3;
@@ -195,64 +197,64 @@ struct corridor {
       // std::cout << dp12 << "\t" << dp23 << "\t" << dp13 << "\n";
       if (dp12 > dp23 and dp12 > dp13) {
         // 3 is the roof
-        plane_1 = p3;
-        points_1 = plane3;
+        planes[0] = p3;
+        points[0] = plane3;
         if (p1.d / p1.a > 0.0) {
-          plane_3 = p1;
-          plane_2 = p2;
-          points_3 = plane1;
-          points_2 = plane2;
+          planes[2] = p1;
+          planes[1] = p2;
+          points[2] = plane1;
+          points[1] = plane2;
         } else {
-          plane_3 = p2;
-          plane_2 = p1;
-          points_3 = plane2;
-          points_2 = plane1;
+          planes[2] = p2;
+          planes[1] = p1;
+          points[2] = plane2;
+          points[1] = plane1;
         }
       } else if (dp13 > dp23 and dp13 > dp12) {
         // std::cout << "Setting 2 as roof\n";
         // 2 is the roof
-        plane_1 = p2;
-        points_1 = plane2;
+        planes[0] = p2;
+        points[0] = plane2;
         if (p1.d / p1.a > 0.0) {
-          plane_3 = p1;
-          plane_2 = p3;
-          points_3 = plane1;
-          points_2 = plane3;
+          planes[2] = p1;
+          planes[1] = p3;
+          points[2] = plane1;
+          points[1] = plane3;
         } else {
-          plane_3 = p3;
-          plane_2 = p1;
-          points_3 = plane3;
-          points_2 = plane1;
+          planes[2] = p3;
+          planes[1] = p1;
+          points[2] = plane3;
+          points[1] = plane1;
         }
       } else {
         // 1 is the roof
-        plane_1 = p1;
-        points_1 = plane1;
+        planes[0] = p1;
+        points[0] = plane1;
         if (p2.d / p2.a > 0.0) {
-          plane_3 = p2;
-          plane_2 = p3;
-          points_3 = plane2;
-          points_2 = plane3;
+          planes[2] = p2;
+          planes[1] = p3;
+          points[2] = plane2;
+          points[1] = plane3;
         } else {
-          plane_3 = p3;
-          plane_2 = p2;
-          points_3 = plane3;
-          points_2 = plane2;
+          planes[2] = p3;
+          planes[1] = p2;
+          points[2] = plane3;
+          points[1] = plane2;
         }
       }
     } else {
       // Road case
-      mxdistance /=2;
+      mxdistance /= 2;
       std::cout << "Fitting a road\n";
       std::vector<cv::Point3f> bottom_pts, side1, side2;
       get_roadpoints(bottom_pts, rem_points);
-      fitPlane(bottom_pts, points_1, plane_1, mxdistance);
+      fitPlane(bottom_pts, points[0], planes[0], mxdistance);
       joinpts(rem_points, bottom_pts);
       get_sidepoints(side1, rem_points, 0);
-      fitPlane(side1, points_2, plane_2, mxdistance, true);
+      fitPlane(side1, points[1], planes[1], mxdistance, true);
       joinpts(rem_points, side1);
       get_sidepoints(side2, rem_points, 1);
-      fitPlane(side2, points_3, plane_3, mxdistance, true);
+      fitPlane(side2, points[2], planes[2], mxdistance, true);
       joinpts(rem_points, side2);
     }
   }
@@ -260,26 +262,26 @@ struct corridor {
   void optimise_planes() {
     // Run optimisation pipeline
     if (ctype == straight) {
-      optimize(0, plane_1, plane_2, plane_3, points_1, points_2, points_3,
-               trajectory, 2 * mxdistance);
+      optimize(0, planes[0], planes[1], planes[2], points[0], points[1],
+               points[2], trajectory, 2 * mxdistance);
     } else {
       // Corner
       return;
-      optimize(1, plane_1, plane_2, plane_3, points_1, points_2, points_3,
-               trajectory, 2 * mxdistance);
+      optimize(1, planes[0], planes[1], planes[2], points[0], points[1],
+               points[2], trajectory, 2 * mxdistance);
     }
   }
 
   float get_width() {
     assert(ctype == straight);
-    float answer = fabs(plane_2.d - plane_3.d);
-    return answer / plane_2.norm();
+    float answer = fabs(planes[2].d - planes[1].d);
+    return answer / planes[2].norm();
   }
 
   float get_height() {
     std::vector<float> distances;
     for (int i = 0; i < trajectory.size(); i++) {
-      distances.push_back(plane_1.distance(trajectory[i]));
+      distances.push_back(planes[0].distance(trajectory[i]));
     }
     std::nth_element(distances.begin(),
                      distances.begin() + (distances.size() / 2),
@@ -289,17 +291,11 @@ struct corridor {
   }
 
   void scale(float f) {
-    plane_1.d *= f;
-    plane_2.d *= f;
-    plane_3.d *= f;
-    for (int i = 0; i < points_1.size(); i++) {
-      points_1[i] *= f;
-    }
-    for (int i = 0; i < points_2.size(); i++) {
-      points_2[i] *= f;
-    }
-    for (int i = 0; i < points_3.size(); i++) {
-      points_3[i] *= f;
+    for (int id = 0; id < planes.size(); id++) {
+      planes[id].d *= f;
+      for (int i = 0; i < points[id].size(); i++) {
+        points[id][i] *= f;
+      }
     }
     for (int i = 0; i < trajectory.size(); i++) {
       trajectory[i] *= f;
@@ -310,19 +306,13 @@ struct corridor {
   }
 
   void shift(cv::Point3f s) {
-    plane_1.shift(s);
-    plane_2.shift(s);
-    plane_3.shift(s);
+    for (int id = 0; id < planes.size(); id++) {
+      planes[id].shift(s);
+      for (int i = 0; i < points[id].size(); i++) {
+        points[id][i] += s;
+      }
+    }
 
-    for (int i = 0; i < points_1.size(); i++) {
-      points_1[i] += s;
-    }
-    for (int i = 0; i < points_2.size(); i++) {
-      points_2[i] += s;
-    }
-    for (int i = 0; i < points_3.size(); i++) {
-      points_3[i] += s;
-    }
     for (int i = 0; i < trajectory.size(); i++) {
       trajectory[i] += s;
     }
@@ -337,18 +327,11 @@ struct corridor {
   }
 
   void rotate(Eigen::Matrix3f rot) {
-    plane_1.rotate(rot);
-    plane_2.rotate(rot);
-    plane_3.rotate(rot);
-
-    for (int i = 0; i < points_1.size(); i++) {
-      points_1[i] = rotTransform(rot, points_1[i]);
-    }
-    for (int i = 0; i < points_2.size(); i++) {
-      points_2[i] = rotTransform(rot, points_2[i]);
-    }
-    for (int i = 0; i < points_3.size(); i++) {
-      points_3[i] = rotTransform(rot, points_3[i]);
+    for (int id = 0; id < planes.size(); id++) {
+      planes[id].rotate(rot);
+      for (int i = 0; i < points[id].size(); i++) {
+        points[id][i] = rotTransform(rot, points[id][i]);
+      }
     }
     for (int i = 0; i < trajectory.size(); i++) {
       trajectory[i] = rotTransform(rot, trajectory[i]);
@@ -368,8 +351,8 @@ struct corridor {
   }
 
   Eigen::Vector3f GetAxis() {
-    Eigen::Vector3f n1 = plane_1.GetNormal();
-    Eigen::Vector3f n2 = plane_3.GetNormal();
+    Eigen::Vector3f n1 = planes[0].GetNormal();
+    Eigen::Vector3f n2 = planes[2].GetNormal();
     Eigen::Vector3f a = n1.cross(n2);
     a.normalize();
     Eigen::Vector3f rough = GetDirection();
@@ -464,14 +447,10 @@ void fix_corridor(corridor &c1, corridor &c2, int angle) {
 
 corridor add_corridor(corridor c1, corridor c2) {
   corridor answer(c1);
-  for (int i = 0; i < c2.points_1.size(); i++) {
-    answer.points_1.push_back(c2.points_1[i]);
-  }
-  for (int i = 0; i < c2.points_2.size(); i++) {
-    answer.points_2.push_back(c2.points_2[i]);
-  }
-  for (int i = 0; i < c2.points_3.size(); i++) {
-    answer.points_3.push_back(c2.points_3[i]);
+  for (int id = 0; id < c2.points.size(); id++) {
+    for (int i = 0; i < c2.points[id].size(); i++) {
+      answer.points[id].push_back(c2.points[id][i]);
+    }
   }
   for (int i = 0; i < c2.trajectory.size(); i++) {
     answer.trajectory.push_back(c2.trajectory[i]);
@@ -485,72 +464,6 @@ corridor add_corridor(corridor c1, corridor c2) {
   for (int i = 0; i < c2.rotations.size(); i++) {
     answer.rotations.push_back(c2.rotations[i]);
   }
-  return answer;
-}
-
-corridor merge_corridor(corridor c1, corridor c2, int angle) {
-  corridor answer(c1);
-  // std::cout << "Left wall " << c1.left_wall.dotp(c2.left_wall) << "\n";
-  // std::cout << "Right wall " << c1.right_wall.dotp(c2.right_wall) << "\n";
-  // std::cout << "Roof " << c1.roof.dotp(c2.roof) << "\n";
-  // Scaling
-  if (angle == 0) {
-    c2.scale(c1.get_width() / c2.get_width());
-  } else {
-    c2.scale(c1.get_height() / c2.get_height());
-  }
-  // Rotation
-  Eigen::Vector3f axis1, axis2;
-  axis1 = c1.GetAxis();
-  axis2 = c2.GetAxis();
-  // std::cout << "Axis 1" << axis1 << "\n";
-  // std::cout << "Axis 2" << axis2 << "\n";
-  Eigen::Vector3f v = axis2.cross(axis1);
-  float con = axis2.dot(axis1);
-  Eigen::Matrix3f vx;
-  vx(0, 0) = 0;
-  vx(0, 1) = -v(2, 0);
-  vx(0, 2) = v(1, 0);
-  vx(1, 0) = v(2, 0);
-  vx(1, 1) = 0;
-  vx(1, 2) = -v(0, 0);
-  vx(2, 0) = -v(1, 0);
-  vx(2, 1) = v(0, 0);
-  vx(2, 2) = 0;
-  Eigen::Matrix3f rot;
-  rot.setZero();
-  rot(0, 0) = 1.0;
-  rot(1, 1) = 1.0;
-  rot(2, 2) = 1.0;
-  rot += vx;
-  rot += (1.0 / (1.0 + con)) * vx * vx;
-  // std::cout << rot << "\n is the rotation matrix\n";
-  c2.rotate(rot);
-  axis1 = c1.GetAxis();
-  axis2 = c2.GetAxis();
-  // std::cout << "Axis 1" << axis1 << "\n";
-  // std::cout << "Axis 2" << axis2 << "\n";
-  if (angle == 1) {
-    // Right turn
-  } else if (angle == 2) {
-    // Left turn
-  }
-  // Shifting
-  c2.shift(c1.trajectory[c1.trajectory.size() - 1]);
-  // std::cout << c1.get_width() << ", " << c2.get_width() << "\n";
-  for (int i = 0; i < c2.points_1.size(); i++) {
-    answer.points_1.push_back(c2.points_1[i]);
-  }
-  for (int i = 0; i < c2.points_2.size(); i++) {
-    answer.points_2.push_back(c2.points_2[i]);
-  }
-  for (int i = 0; i < c2.points_3.size(); i++) {
-    answer.points_3.push_back(c2.points_3[i]);
-  }
-  for (int i = 0; i < c2.trajectory.size(); i++) {
-    answer.trajectory.push_back(c2.trajectory[i]);
-  }
-
   return answer;
 }
 

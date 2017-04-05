@@ -22,8 +22,8 @@ int main(int argc, char** argv) {
     f.reset_origin(0);
     Eigen::Vector3f srcv;
     srcv.setZero();
-    srcv(2,0) = 1.0;
-    Eigen::Vector3f destv = f.get_translation_vector(0,29);
+    srcv(2, 0) = 1.0;
+    Eigen::Vector3f destv = f.get_translation_vector(0, 29);
     Eigen::Matrix3f rotreq = GetRotMatrix(destv, srcv);
     f.rotate(rotreq.transpose(), rotreq);
   }
@@ -35,10 +35,10 @@ int main(int argc, char** argv) {
         corridor(f, i * FLAGS_batch_size,
                  std::min(f.num_kf(), 1 + (i + 1) * FLAGS_batch_size)));
   }
-  if (FLAGS_reset_pt>0) {
+  if (FLAGS_reset_pt > 0) {
     all_corridors[0].basicInit(1);
     all_corridors[0].WritePly(FLAGS_dir + "cor" + std::to_string(0) + ".ply");
-    return 0;    
+    return 0;
   }
   all_corridors[0].basicInit();
   all_corridors[0].optimise_planes();
@@ -55,8 +55,8 @@ int main(int argc, char** argv) {
       //   std::cout << "Previous was straight\n";
       motion_types.push_back(1);
       all_corridors[i].initPlanes(
-          corner, all_corridors[i - 1].plane_1, all_corridors[i - 1].plane_2,
-          all_corridors[i - 1].plane_3,
+          corner, all_corridors[i - 1].planes[0],
+          all_corridors[i - 1].planes[1], all_corridors[i - 1].planes[2],
           all_corridors[i - 1]
               .rotations[all_corridors[i - 1].rotations.size() - 1],
           all_corridors[i - 1]
@@ -68,8 +68,8 @@ int main(int argc, char** argv) {
       motion_types.push_back(0);
       // Straight corridor continuing
       all_corridors[i].initPlanes(
-          straight, all_corridors[i - 1].plane_1, all_corridors[i - 1].plane_2,
-          all_corridors[i - 1].plane_3,
+          straight, all_corridors[i - 1].planes[0],
+          all_corridors[i - 1].planes[1], all_corridors[i - 1].planes[2],
           all_corridors[i - 1]
               .rotations[all_corridors[i - 1].rotations.size() - 1],
           all_corridors[i - 1]
