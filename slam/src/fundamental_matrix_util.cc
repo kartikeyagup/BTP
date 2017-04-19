@@ -67,7 +67,7 @@ bool FocalLengthsFromFundamentalMatrix(const double fmatrix[3 * 3],
                                 .matrixV()
                                 .rightCols<1>();
   if (epipole1.x() == 0 || epipole2.x() == 0) {
-    VLOG(3) << "Optical axes are collinear. Cannot recover the focal length.";
+    // VLOG(3) << "Optical axes are collinear. Cannot recover the focal length.";
     return false;
   }
 
@@ -122,7 +122,7 @@ bool FocalLengthsFromFundamentalMatrix(const double fmatrix[3 * 3],
       (a * b * rotated_epipole2(2) * rotated_epipole2(2) + c * d);
 
   if (focal_length1_sq < 0 || focal_length2_sq < 0) {
-    VLOG(3) << "Real focal length values could not be extracted.";
+    // VLOG(3) << "Real focal length values could not be extracted.";
     return false;
   }
 
