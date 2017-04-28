@@ -51,4 +51,11 @@ void optimize(int type, plane& rf, plane& lft, plane& rt,
               std::vector<cv::Point3f>& pts_right,
               std::vector<cv::Point3f>& trajectory, float mindistance);
 
+void optimize_four(int type, plane& rf, plane& lft, plane& rt, plane& frth,
+              std::vector<cv::Point3f>& pts_rf,
+              std::vector<cv::Point3f>& pts_left,
+              std::vector<cv::Point3f>& pts_right,
+              std::vector<cv::Point3f>& pts_fourth,
+              std::vector<cv::Point3f>& trajectory, float mindistance);
+
 #endif

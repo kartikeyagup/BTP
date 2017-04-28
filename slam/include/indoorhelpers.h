@@ -361,9 +361,8 @@ struct corridor {
   }
 
   void optimise_four_planes() {
-    //Do it for planes[3] and points[3] too
-    optimize(0, planes[0], planes[1], planes[2], points[0], points[1],
-               points[2], trajectory, 2 * mxdistance);  
+    optimize_four(0, planes[0], planes[1], planes[2], planes[3], points[0], points[1],
+               points[2], points[3], trajectory, 2 * mxdistance);  
   }
 
 
