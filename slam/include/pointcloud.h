@@ -70,6 +70,10 @@ struct plane {
 void segment_Points(std::vector<cv::Point3f> &inputpoints,
                     std::vector<int> &inliers, plane &p, float distance, bool side=false);
 
+std::vector<cv::Point3f> filterPoints(std::vector<cv::Point3f> &input,
+                                      std::vector<int> &inliers,
+                                      std::vector<cv::Point3f> &valid);
+
 void fitPlane(std::vector<cv::Point3f> &inpoints,
               std::vector<cv::Point3f> &planepts, plane &p, float dist, bool side=false);
 
@@ -79,4 +83,16 @@ void fit3Planes(std::vector<cv::Point3f> &inputpoints,
                 std::vector<cv::Point3f> &plane3, plane &p1, plane &p2,
                 plane &p3, float distance);
 
+std::vector<std::vector<int> > fit3Planes_with_inliers(std::vector<cv::Point3f> &inputpoints,
+                std::vector<cv::Point3f> &plane1,
+                std::vector<cv::Point3f> &plane2,
+                std::vector<cv::Point3f> &plane3, plane &p1, plane &p2,
+                plane &p3, float distance);
+
+void fit3Planes_with_ref(std::vector<cv::Point3f> &inputpoints,
+                std::vector<cv::Point3f> &plane1,
+                std::vector<cv::Point3f> &plane2,
+                std::vector<cv::Point3f> &plane3,
+                std::vector<cv::Point3f> &plane4, plane &p1, plane &p2,
+                plane &p3, plane &p4, float distance);
 #endif

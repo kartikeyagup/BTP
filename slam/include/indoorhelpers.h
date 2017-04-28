@@ -115,7 +115,7 @@ struct corridor {
       // All other planes
       for (int i = 0; i < points[id].size(); i++) {
         temp.corr_data.push_back(
-            Corr3D(points[id][i], cv::Point3i(0, 255, 255)));
+            Corr3D(points[id][i], cv::Point3i(255, 255, 0)));
       }
     }
     for (int i = 0; i < rem_points.size(); i++) {
@@ -253,6 +253,100 @@ struct corridor {
     }
   }
 
+  void basicInit_with_ref() {
+    // ctype = straight;
+    // plane p1, p2, p3;
+    // std::vector<cv::Point3f> plane1, plane2, plane3;
+    
+    // fit3Planes_with_ref(rem_points, plane1, plane2, plane3, p1, p2, p3,
+    //            0.8 * mxdistance);
+
+    // std::cout<<plane1.size()<<" "<<plane2.size()<<" "<<plane3.size()<<std::endl;
+    // plane_1=p1;
+    // plane_2=p2;
+    // plane_3=p3;  
+
+    // points_1=plane1;
+    // points_2=plane2;
+    // points_3=plane3;
+    ctype = straight;
+    plane p1, p2, p3;
+    std::vector<cv::Point3f> plane1, plane2, plane3;
+    std::vector<std::vector<int> > inliers = fit3Planes_with_inliers(rem_points, 
+                                    plane1, plane2, plane3, p1, p2, p3,
+                                    0.8 * mxdistance);
+
+    std::vector<int> roof_inliers;
+
+    float dp12 = fabs(p1.dotp(p2));
+    float dp13 = fabs(p1.dotp(p3));
+    float dp23 = fabs(p2.dotp(p3));
+    // std::cout << dp12 << "\t" << dp23 << "\t" << dp13 << "\n";
+    if (dp12 > dp23 and dp12 > dp13) {
+      // 3 is the roof
+      planes[0] = p3;
+      points[0] = plane3;
+      roof_inliers = inliers[2];
+      if (p1.d / p1.a > 0.0) {
+        planes[2] = p1;
+        planes[1] = p2;
+        points[2] = plane1;
+        points[1] = plane2;
+      } else {
+        planes[2] = p2;
+        planes[1] = p1;
+        points[2] = plane2;
+        points[1] = plane1;
+      }
+    } else if (dp13 > dp23 and dp13 > dp12) {
+      // std::cout << "Setting 2 as roof\n";
+      // 2 is the roof
+      planes[0] = p2;
+      points[0] = plane2;
+      roof_inliers = inliers[1];
+
+      if (p1.d / p1.a > 0.0) {
+        planes[2] = p1;
+        planes[1] = p3;
+        points[2] = plane1;
+        points[1] = plane3;
+      } else {
+        planes[2] = p3;
+        planes[1] = p1;
+        points[2] = plane3;
+        points[1] = plane1;
+      }
+    } else {
+      // 1 is the roof
+      planes[0] = p1;
+      points[0] = plane1;
+      roof_inliers = inliers[0];
+
+      if (p2.d / p2.a > 0.0) {
+        planes[2] = p2;
+        planes[1] = p3;
+        points[2] = plane2;
+        points[1] = plane3;
+      } else {
+        planes[2] = p3;
+        planes[1] = p2;
+        points[2] = plane3;
+        points[1] = plane2;
+      }
+    }
+    //removing roof points
+    std::vector<cv::Point3f> remaining_pts =
+    filterPoints(rem_points, roof_inliers, points[0]);
+
+    planes.resize(4);
+    points.resize(4);
+
+    fit3Planes_with_ref(remaining_pts, points[0], points[1], points[2],
+               points[3], planes[0], planes[1], planes[2], planes[3],
+               0.8 * mxdistance);
+
+  }
+
   void optimise_planes() {
     // Run optimisation pipeline
     if (ctype == straight) {
@@ -265,6 +359,13 @@ struct corridor {
                points[2], trajectory, 2 * mxdistance);
     }
   }
+
+  void optimise_four_planes() {
+    //Do it for planes[3] and points[3] too
+    optimize(0, planes[0], planes[1], planes[2], points[0], points[1],
+               points[2], trajectory, 2 * mxdistance);  
+  }
+
 
   float get_width() {
     assert(ctype == straight);
