@@ -2,7 +2,8 @@
 #include <unordered_set>
 
 void segment_Points(std::vector<cv::Point3f> &inputpoints,
-                    std::vector<int> &in_inliers, plane &p, float distance, bool side) {
+                    std::vector<int> &in_inliers, plane &p, float distance,
+                    bool side) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   // Fill in the cloud data
   cloud->width = inputpoints.size();
@@ -24,9 +25,9 @@ void segment_Points(std::vector<cv::Point3f> &inputpoints,
     std::cout << "Entered\n";
     Eigen::Vector3f axis;
     axis.setZero();
-    axis(0,0) = -1.0;
+    axis(0, 0) = -1.0;
     seg.setAxis(axis);
-    seg.setEpsAngle(10.0f*(M_PI)/180.0);
+    seg.setEpsAngle(10.0f * (M_PI) / 180.0);
     seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
   } else {
     seg.setModelType(pcl::SACMODEL_PLANE);
@@ -74,12 +75,27 @@ std::vector<cv::Point3f> filterPoints(std::vector<cv::Point3f> &input,
 }
 
 void fitPlane(std::vector<cv::Point3f> &inpoints,
-              std::vector<cv::Point3f> &planepts, plane &p, float dist, bool side) {
+              std::vector<cv::Point3f> &planepts, plane &p, float dist,
+              bool side) {
   std::vector<int> inliers1;
   segment_Points(inpoints, inliers1, p, dist, side);
   std::vector<cv::Point3f> remaining_pts =
       filterPoints(inpoints, inliers1, planepts);
   inpoints = remaining_pts;
+}
+
+void fit2Planes(std::vector<cv::Point3f> &inputpoints,
+                std::vector<cv::Point3f> &plane1,
+                std::vector<cv::Point3f> &plane2, plane &p1, plane &p2,
+                float distance) {
+  std::vector<int> inliers1, inliers2;
+  segment_Points(inputpoints, inliers1, p1, distance);
+  std::vector<cv::Point3f> remaining_pts =
+      filterPoints(inputpoints, inliers1, plane1);
+
+  segment_Points(remaining_pts, inliers2, p2, distance);
+  std::vector<cv::Point3f> remaining_pts_1 =
+      filterPoints(remaining_pts, inliers2, plane2);
 }
 
 void fit3Planes(std::vector<cv::Point3f> &inputpoints,

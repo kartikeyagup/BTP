@@ -68,10 +68,17 @@ struct plane {
 };
 
 void segment_Points(std::vector<cv::Point3f> &inputpoints,
-                    std::vector<int> &inliers, plane &p, float distance, bool side=false);
+                    std::vector<int> &inliers, plane &p, float distance,
+                    bool side = false);
 
 void fitPlane(std::vector<cv::Point3f> &inpoints,
-              std::vector<cv::Point3f> &planepts, plane &p, float dist, bool side=false);
+              std::vector<cv::Point3f> &planepts, plane &p, float dist,
+              bool side = false);
+
+void fit2Planes(std::vector<cv::Point3f> &inputpoints,
+                std::vector<cv::Point3f> &plane1,
+                std::vector<cv::Point3f> &plane2, plane &p1, plane &p2,
+                float distance);
 
 void fit3Planes(std::vector<cv::Point3f> &inputpoints,
                 std::vector<cv::Point3f> &plane1,

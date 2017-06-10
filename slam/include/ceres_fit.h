@@ -51,4 +51,9 @@ void optimize(int type, plane& rf, plane& lft, plane& rt,
               std::vector<cv::Point3f>& pts_right,
               std::vector<cv::Point3f>& trajectory, float mindistance);
 
+void optimize_parallel(plane& lft, plane& rt,
+                       std::vector<cv::Point3f>& pts_left,
+                       std::vector<cv::Point3f>& pts_right,
+                       std::vector<cv::Point3f>& trajectory, float mindistance);
+
 #endif

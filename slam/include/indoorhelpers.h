@@ -5,7 +5,30 @@
 #include "nvmhelpers.h"
 #include "pointcloud.h"
 
-enum CorType { straight, corner };
+enum CorType { straight, corner, upstairs };
+
+Eigen::Matrix3f GetRotMatrix(Eigen::Vector3f dest, Eigen::Vector3f src) {
+  Eigen::Vector3f v = src.cross(dest);
+  float con = src.dot(dest);
+  Eigen::Matrix3f vx;
+  vx(0, 0) = 0;
+  vx(0, 1) = -v(2, 0);
+  vx(0, 2) = v(1, 0);
+  vx(1, 0) = v(2, 0);
+  vx(1, 1) = 0;
+  vx(1, 2) = -v(0, 0);
+  vx(2, 0) = -v(1, 0);
+  vx(2, 1) = v(0, 0);
+  vx(2, 2) = 0;
+  Eigen::Matrix3f rot;
+  rot.setZero();
+  rot(0, 0) = 1.0;
+  rot(1, 1) = 1.0;
+  rot(2, 2) = 1.0;
+  rot += vx;
+  rot += (1.0 / (1.0 + con)) * vx * vx;
+  return rot;
+}
 
 void fitPoints(std::vector<cv::Point3f> &ap, std::vector<cv::Point3f> &fit,
                plane p, float dist) {
@@ -73,6 +96,41 @@ struct corridor {
   std::vector<cv::Point3f> trajectory;
   std::vector<Eigen::Matrix3f> rotations;
   std::vector<double> focals;
+
+  static cv::Point3f rotTransform(Eigen::Matrix3f &r, cv::Point3f p) {
+    cv::Point3f res;
+    res.x = r(0, 0) * p.x + r(0, 1) * p.y + r(0, 2) * p.z;
+    res.y = r(1, 0) * p.x + r(1, 1) * p.y + r(1, 2) * p.z;
+    res.z = r(2, 0) * p.x + r(2, 1) * p.y + r(2, 2) * p.z;
+    return res;
+  }
+
+  void Split2Sides(std::vector<cv::Point3f> &points1,
+                   std::vector<cv::Point3f> &points2) {
+    std::vector<cv::Point3f> copyPoints(rem_points);
+    for (int i = 0; i < copyPoints.size(); i++) {
+      copyPoints[i] -= trajectory[0];
+    }
+    Eigen::Vector3f srcv, destv;
+    srcv.setZero();
+    srcv(2, 0) = 1.0;
+    cv::Point3f destvp = trajectory.back() - trajectory[0];
+    destv(0, 0) = destvp.x;
+    destv(1, 0) = destvp.y;
+    destv(2, 0) = destvp.z;
+    destv.normalize();
+    Eigen::Matrix3f rotreq = GetRotMatrix(destv, srcv);
+    for (int i = 0; i < copyPoints.size(); i++) {
+      copyPoints[i] = rotTransform(rotreq, copyPoints[i]);
+    }
+    for (int i = 0; i < copyPoints.size(); i++) {
+      if (copyPoints[i].x > 0) {
+        points1.push_back(rem_points[i]);
+      } else {
+        points2.push_back(rem_points[i]);
+      }
+    }
+  }
 
   void WriteFile(std::string path) {
     std::ofstream f;
@@ -153,6 +211,9 @@ struct corridor {
       planes[1] = p2;
       fitPoints(rem_points, points[2], p3, mxdistance * 1.5);
       planes[2] = p3;
+    } else if (c == upstairs) {
+      fitPoints(rem_points, points[1], p2, mxdistance * 2);
+      planes[1] = p2;
     } else {
       ctype = straight;
       fitPlane(rem_points, points[1], planes[1], mxdistance);
@@ -236,6 +297,22 @@ struct corridor {
           points[1] = plane2;
         }
       }
+    } else if (tp == -1) {
+      // Init stairs
+      ctype = straight;
+      plane p1, p2;
+      std::vector<cv::Point3f> plane1, plane2;
+      Split2Sides(plane1, plane2);
+      fitPlane(plane1, points[0], planes[0], 1.2 * mxdistance);
+      joinpts(rem_points, plane1);
+      fitPlane(plane2, points[1], planes[1], 1.2 * mxdistance);
+      joinpts(rem_points, plane2);
+
+      // fit2Planes(rem_points, plane1, plane2, p1, p2, 1.2 * mxdistance);
+      // planes[0] = p1;
+      // planes[1] = p2;
+      // points[0] = plane1;
+      // points[1] = plane2;
     } else {
       // Road case
       mxdistance /= 2;
@@ -255,14 +332,19 @@ struct corridor {
 
   void optimise_planes() {
     // Run optimisation pipeline
-    if (ctype == straight) {
-      optimize(0, planes[0], planes[1], planes[2], points[0], points[1],
-               points[2], trajectory, 2 * mxdistance);
+    if (points[2].size() == 0) {
+      optimize_parallel(planes[0], planes[1], points[0], points[1], trajectory,
+                        2 * mxdistance);
     } else {
-      // Corner
-      return;
-      optimize(1, planes[0], planes[1], planes[2], points[0], points[1],
-               points[2], trajectory, 2 * mxdistance);
+      if (ctype == straight) {
+        optimize(0, planes[0], planes[1], planes[2], points[0], points[1],
+                 points[2], trajectory, 2 * mxdistance);
+      } else {
+        // Corner
+        return;
+        optimize(1, planes[0], planes[1], planes[2], points[0], points[1],
+                 points[2], trajectory, 2 * mxdistance);
+      }
     }
   }
 
@@ -312,14 +394,6 @@ struct corridor {
     }
   }
 
-  static cv::Point3f rotTransform(Eigen::Matrix3f &r, cv::Point3f p) {
-    cv::Point3f res;
-    res.x = r(0, 0) * p.x + r(0, 1) * p.y + r(0, 2) * p.z;
-    res.y = r(1, 0) * p.x + r(1, 1) * p.y + r(1, 2) * p.z;
-    res.z = r(2, 0) * p.x + r(2, 1) * p.y + r(2, 2) * p.z;
-    return res;
-  }
-
   void rotate(Eigen::Matrix3f rot) {
     for (int id = 0; id < planes.size(); id++) {
       planes[id].rotate(rot);
@@ -359,29 +433,6 @@ struct corridor {
   }
 };
 
-Eigen::Matrix3f GetRotMatrix(Eigen::Vector3f dest, Eigen::Vector3f src) {
-  Eigen::Vector3f v = src.cross(dest);
-  float con = src.dot(dest);
-  Eigen::Matrix3f vx;
-  vx(0, 0) = 0;
-  vx(0, 1) = -v(2, 0);
-  vx(0, 2) = v(1, 0);
-  vx(1, 0) = v(2, 0);
-  vx(1, 1) = 0;
-  vx(1, 2) = -v(0, 0);
-  vx(2, 0) = -v(1, 0);
-  vx(2, 1) = v(0, 0);
-  vx(2, 2) = 0;
-  Eigen::Matrix3f rot;
-  rot.setZero();
-  rot(0, 0) = 1.0;
-  rot(1, 1) = 1.0;
-  rot(2, 2) = 1.0;
-  rot += vx;
-  rot += (1.0 / (1.0 + con)) * vx * vx;
-  return rot;
-}
-
 void fix_corridor(corridor &c1, corridor &c2, int angle) {
   if (angle == 0) {
     // Straight merging
@@ -409,7 +460,7 @@ void fix_corridor(corridor &c1, corridor &c2, int angle) {
     c2.rotate(rot2);
     c2.shift(c1.trajectory[c1.trajectory.size() - 1] - c2.trajectory[0]);
 
-  } else {
+  } else if (angle == 1) {
     // Turn merging
     std::cout << "Turn merging\n";
     float height2 = c2.get_height();
@@ -435,6 +486,9 @@ void fix_corridor(corridor &c1, corridor &c2, int angle) {
 
     Eigen::Matrix3f rot2 = GetRotMatrix(roof1, roof2);
     c2.rotate(rot2);
+    c2.shift(c1.trajectory[c1.trajectory.size() - 1] - c2.trajectory[0]);
+  } else {
+    // Could not do anything
     c2.shift(c1.trajectory[c1.trajectory.size() - 1] - c2.trajectory[0]);
   }
 }
